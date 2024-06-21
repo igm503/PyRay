@@ -31,18 +31,19 @@ class Scene:
         # check_time = 0
         # hit_time = 0
         # start = time.time()
-        closest_hit = Hit()
+        closest_hit = None
         for _ in range(max_bounces):
             for surface in self.surfaces:
                 # check_start = time.time()
-                hit, color, normal, t = surface.check_hit(ray)
+                hit = surface.check_hit(ray)
                 # check_time += time.time() - check_start
-                if hit and (closest_hit.t is None or t < closest_hit.t):
-                    closest_hit.color = color
-                    closest_hit.normal = normal
-                    closest_hit.material = surface.material
-                    closest_hit.t = t
-            if closest_hit.t is None:
+                # print(hit)
+                # print(closest_hit)
+                if hit is not None and (closest_hit is None or hit.t < closest_hit.t):
+                    closest_hit = hit
+                    # print("new closest hit")
+                    # print(closest_hit)
+            if closest_hit is None:
                 if ray.dir.dot(np.array([0, 0, 1])) > 0:
                     if ray.dir.dot(np.array([0, 0, 1])) > .95:
                         ray.hit(sun_hit)
@@ -50,8 +51,9 @@ class Scene:
                 else:
                     ray.hit(grass_hit)
                 break
-            # hit_start = time.time()
-            ray.hit(closest_hit)
-            # hit_time += time.time() - hit_start
-            closest_hit.t = None
+            else:
+                # hit_start = time.time()
+                ray.hit(closest_hit)
+                # hit_time += time.time() - hit_start
+            closest_hit = None
         # print("hit:", hit_time, "check:", check_time, "total:", time.time() - start)

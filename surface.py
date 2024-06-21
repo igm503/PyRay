@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 class Surface(ABC):
 
     @abstractmethod
-    def check_hit(self):
+    def check_hit(self, ray: "Ray"):
         pass
 
 class Material:
