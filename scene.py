@@ -2,6 +2,7 @@ import time
 import math
 
 import numpy as np
+import cv2
 
 from ray import Ray
 from surface import Surface, Hit
@@ -64,6 +65,27 @@ class Scene:
         img /= num_rays
         img = np.clip(img, 0, 255).astype(np.uint8)
         return img
+
+    def static_render(self, view: View, num_rays: int, max_bounces: int):
+        img = np.zeros((view.height, view.width, 3))
+        for i in range(num_rays):
+            for ray in self.get_rays(view, 1):
+                self.trace_ray(ray, max_bounces)
+                if ray.hits > 0:
+                    img[ray.pixel_coords[::-1]] += ray.color * min(ray.luminance, 1.0) * 255
+            current_img = img / (i + 1)
+            current_img = np.clip(current_img, 0, 255).astype(np.uint8)
+            cv2.putText(
+                current_img,
+                f"Rendering... {i+1}/{num_rays}",
+                (5, 12),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (255, 255, 255),
+                1,
+            )
+            cv2.imshow("image", current_img)
+            cv2.waitKey(1)
 
     def trace_ray(self, ray: Ray, max_bounces: int):
         # check_time = 0

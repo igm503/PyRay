@@ -19,19 +19,33 @@ triangle2 = Triangle(
     material="diffuse",
 )
 
-sphere1 = Sphere(
-    center=np.array([0.0, 0.0, 0.0]),
-    radius=1,
-    color=np.array([1, 0, 0]),
+sun = Sphere(
+    center=np.array([-30.0, 100.0, -20.0]),
+    radius=10,
+    color=np.array([1, 1, 1]),
     material="diffuse",
-    # luminance=0.5,
+    luminance=1.0,
+)
+red_sun = Sphere(
+    center=np.array([50.0, 70.0, 20.0]),
+    radius=10,
+    color=np.array([.7, .7, 1]),
+    material="diffuse",
+    luminance=1.0,
 )
 sphere2 = Sphere(
     center=np.array([0.0, 5.0, 2.0]),
     radius=1,
     color=np.array([0.5, 0, 0]),
     material="diffuse",
-    luminance=0.5,
+    luminance=0.0,
+)
+sphere3 = Sphere(
+    center=np.array([2.0, 7.0, 4.0]),
+    radius=2,
+    color=np.array([0.5, 0, 0]),
+    material="specular",
+    luminance=0.0,
 )
 
 view = View(
@@ -42,8 +56,9 @@ view = View(
     fov=90,
 )
 
-scene = Scene([sphere1, sphere2,  triangle1, triangle2])
+scene = Scene([red_sun, sun, sphere3, sphere2])#,  triangle1, triangle2])
 
+# scene.static_render(view, num_rays=100, max_bounces=5)
 last_time = time.time()
 while True:
     img = scene.render(view, num_rays=1, max_bounces=5)
