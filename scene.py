@@ -1,4 +1,5 @@
 import time
+import math
 
 import numpy as np
 
@@ -6,25 +7,62 @@ from ray import Ray
 from surface import Surface, Hit
 from view import View
 
-sky_hit = Hit(color=np.array([100, 100, 0.0]), normal=np.array([0, 0.0, 0]), t=1, material="diffuse")
-grass_hit = Hit(color=np.array([0.0, 100, 0.0]), normal=np.array([0, 0.0, 0]), t=1, material="diffuse")
-sun_hit = Hit(color=np.array([255, 255, 255]), normal=np.array([0, 0.0, 0]), t=1, material="diffuse")
+sun_hit = Hit(
+    color=np.array([1, 1, 1]),
+    normal=np.array([0, 0.0, 0]),
+    t=1,
+    material="diffuse",
+    luminance=1.0,
+)
+
+
+def get_sky_hit(ray: Ray):
+    ground_plane_component = ray.dir[0] ** 2 + ray.dir[1] ** 2
+    color = np.array([1, .9, .5]) + np.array([0, 0.1, 0.5]) * ground_plane_component
+    return Hit(
+        color=color,
+        normal=np.array([0, 0.0, 0]),
+        t=1,
+        material="diffuse",
+        luminance=.5,
+    )
+
 
 class Scene:
     def __init__(self, surfaces: list[Surface]):
         self.surfaces = surfaces
 
-    def render(self, view: View, max_bounces: int):
-        start = time.time()
-        print(len(view.rays))
-        for ray in view.rays:
-            self.trace_ray(ray, max_bounces)
-        trace = time.time()
+    def get_rays(self, view: View, num_rays: int):
+        rays = []
+        projection_center = view.origin + view.dir
+        left_dir = -np.cross(view.dir, np.array([0, 0, 1]))
+        self.left_dir = left_dir / np.linalg.norm(left_dir)
+        up_dir = np.cross(view.dir, left_dir)
+        up_dir = up_dir / np.linalg.norm(up_dir)
+        pixel_unit = (2 * math.tan(view.fov / 2)) / view.width
+        top_left = (
+            projection_center
+            + math.tan(view.fov / 2) * left_dir
+            + (pixel_unit * view.height / 2) * up_dir
+        )
+
+        for x in range(view.width):
+            for y in range(view.height):
+                point = top_left - x * pixel_unit * left_dir - y * pixel_unit * up_dir
+                dir = point - view.origin
+                for _ in range(num_rays):
+                    rays.append(Ray(view.origin, dir, (x, y)))
+
+        return rays
+
+    def render(self, view: View, num_rays: int, max_bounces: int):
         img = np.zeros((view.height, view.width, 3))
-        for ray in view.rays:
-            img[ray.pixel_coords[::-1]] = ray.color
-        draw = time.time()
-        print("trace:", trace - start, "draw:", draw - trace)
+        for ray in self.get_rays(view, num_rays):
+            self.trace_ray(ray, max_bounces)
+            if ray.hits > 0:
+                img[ray.pixel_coords[::-1]] += ray.color * min(ray.luminance, 1.0)* 255
+        img /= num_rays
+        img = np.clip(img, 0, 255).astype(np.uint8)
         return img
 
     def trace_ray(self, ray: Ray, max_bounces: int):
@@ -37,19 +75,14 @@ class Scene:
                 # check_start = time.time()
                 hit = surface.check_hit(ray)
                 # check_time += time.time() - check_start
-                # print(hit)
-                # print(closest_hit)
                 if hit is not None and (closest_hit is None or hit.t < closest_hit.t):
                     closest_hit = hit
-                    # print("new closest hit")
-                    # print(closest_hit)
             if closest_hit is None:
-                if ray.dir.dot(np.array([0, 0, 1])) > 0:
-                    if ray.dir.dot(np.array([0, 0, 1])) > .95:
+                if ray.dir.dot(np.array([0, 0, 1.0])) > 0:
+                    if ray.dir.dot(np.array([0, 0, 1])) > 0.95:
                         ray.hit(sun_hit)
-                    ray.hit(sky_hit)
-                else:
-                    ray.hit(grass_hit)
+                    else:
+                        ray.hit(get_sky_hit(ray))
                 break
             else:
                 # hit_start = time.time()

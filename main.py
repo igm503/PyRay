@@ -5,32 +5,62 @@ import numpy as np
 
 from scene import Scene
 from triangle import Triangle
+from sphere import Sphere
 from view import View
 
-triangle = Triangle(
-    points=np.array([[0.0, 0.0, 1], [1.0, 0, 0], [0, 5, 0]]),
-    color=np.array([0, 0, 255]),
+triangle1 = Triangle(
+    points=np.array([[-150.0, -150.0, 0], [150, 150.0, -0], [-150.0, 150, -0]]),
+    color=np.array([0, 0.5, 0]),
     material="diffuse",
+)
+triangle2 = Triangle(
+    points=np.array([[-150.0, -150.0, 0], [150, -150.0, 0], [150, 150.0, -0]]),
+    color=np.array([0, 0.5, 0]),
+    material="diffuse",
+)
+
+sphere1 = Sphere(
+    center=np.array([0.0, 0.0, 0.0]),
+    radius=1,
+    color=np.array([1, 0, 0]),
+    material="diffuse",
+    # luminance=0.5,
+)
+sphere2 = Sphere(
+    center=np.array([0.0, 5.0, 2.0]),
+    radius=1,
+    color=np.array([0.5, 0, 0]),
+    material="diffuse",
+    luminance=0.5,
 )
 
 view = View(
     origin=np.array([0, -1.0, 2.0]),
-    dir=np.array([0, 0.2, 0.02]),
+    dir=np.array([0, 0.2, 0]),
     width=160,
     height=80,
     fov=90,
 )
 
-scene = Scene([triangle])
+scene = Scene([sphere1, sphere2,  triangle1, triangle2])
 
 last_time = time.time()
 while True:
-    img = scene.render(view, max_bounces=3)
+    img = scene.render(view, num_rays=1, max_bounces=5)
     img = cv2.resize(img, (960, 480), interpolation=cv2.INTER_NEAREST)
     fps = round(1 / (time.time() - last_time), 2)
     last_time = time.time()
     cv2.putText(
         img, str(fps), (5, 12), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1
+    )
+    cv2.putText(
+        img,
+        f"origin: {view.origin}, dir: {view.dir}, fov: {view.fov}",
+        (5, 24),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.5,
+        (255, 255, 255),
+        1,
     )
     cv2.imshow("image", img)
     key = cv2.waitKey(1) & 0xFF
@@ -60,5 +90,3 @@ while True:
     elif key == ord("l"):
         print("look right")
         view.look_right()
-    view.reset_rays()
-

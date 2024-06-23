@@ -8,12 +8,6 @@ if TYPE_CHECKING:
     from ray import Ray
 
 
-class Surface(ABC):
-
-    @abstractmethod
-    def check_hit(self, ray: "Ray"):
-        pass
-
 class Material:
     SPECULAR = "specular"
     DIFFUSE = "diffuse"
@@ -25,3 +19,10 @@ class Hit:
     normal: np.ndarray | None = None
     t: float | None = None
     material: str | None = None
+    luminance: float = 0
+
+
+class Surface(ABC):
+    @abstractmethod
+    def check_hit(self, ray: "Ray") -> Hit | None:
+        pass

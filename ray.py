@@ -9,14 +9,14 @@ class Ray:
         self.origin = origin
         self.dir = dir / np.linalg.norm(dir)
         self.pixel_coords = pixel_coords
-        self.color = None
+        self.color = np.array([1.0, 1, 1])
+        self.luminance = 0
+        self.hits = 0
 
         self.og_origin = origin
         self.og_dir = self.dir
 
     def hit(self, hit: Hit):
-        if self.color is None:
-            self.color = hit.color
         self.origin, self.dir, self.color = hit_optimized(
             self.origin,
             self.dir,
@@ -26,6 +26,8 @@ class Ray:
             hit.normal,
             hit.material,
         )
+        self.hits += 1
+        self.luminance += hit.luminance
         # if self.color is None:
         #     self.color = hit.color
         # else:
@@ -48,11 +50,9 @@ class Ray:
 
 @njit
 def hit_optimized(origin, dir, color, hit_color, hit_t, hit_normal, hit_material):
-    color = np.minimum(color, hit_color)
-
     origin = origin + hit_t * dir
-
     if hit_material == "diffuse":
+        color = color * hit_color
         random_dir = np.random.normal(0, 1, 3)
         if np.dot(random_dir, hit_normal) < 0:
             random_dir = -random_dir
@@ -61,9 +61,7 @@ def hit_optimized(origin, dir, color, hit_color, hit_t, hit_normal, hit_material
         dir = dir - 2 * np.dot(dir, hit_normal) * hit_normal
     else:
         raise ValueError("Invalid material:", hit_material)
-
     dir = normalize(dir)
-
     return origin, dir, color
 
 
