@@ -58,10 +58,10 @@ view = View(
 
 scene = Scene([red_sun, sun, sphere3, sphere2])#,  triangle1, triangle2])
 
-# scene.static_render(view, num_rays=100, max_bounces=5)
+scene.static_render(view, num_rays=100, max_bounces=5)
 last_time = time.time()
 while True:
-    img = scene.render(view, num_rays=1, max_bounces=5)
+    img = scene.interactive_render(view, num_rays=1, max_bounces=5)
     img = cv2.resize(img, (960, 480), interpolation=cv2.INTER_NEAREST)
     fps = round(1 / (time.time() - last_time), 2)
     last_time = time.time()
@@ -82,26 +82,18 @@ while True:
     if key == ord("q"):
         break
     elif key == ord("w"):
-        print("forward")
         view.forward()
     elif key == ord("s"):
-        print("backward")
         view.backward()
     elif key == ord("a"):
-        print("left")
         view.left()
     elif key == ord("d"):
-        print("right")
         view.right()
     elif key == ord("i"):
-        print("look up")
         view.look_up()
     elif key == ord("k"):
-        print("look down")
         view.look_down()
     elif key == ord("j"):
-        print("look left")
         view.look_left()
     elif key == ord("l"):
-        print("look right")
         view.look_right()

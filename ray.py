@@ -1,20 +1,18 @@
 import numpy as np
 from numba import njit
 
-from surface import Hit, Material
+from surface import Hit
+from utils import normalize
 
 
 class Ray:
     def __init__(self, origin: np.ndarray, dir: np.ndarray, pixel_coords: tuple):
         self.origin = origin
-        self.dir = dir / np.linalg.norm(dir)
+        self.dir = normalize(dir)
         self.pixel_coords = pixel_coords
         self.color = np.array([1.0, 1, 1])
         self.luminance = 0
         self.hits = 0
-
-        self.og_origin = origin
-        self.og_dir = self.dir
 
     def hit(self, hit: Hit):
         self.origin, self.dir, self.color = hit_optimized(
@@ -61,13 +59,5 @@ def hit_optimized(origin, dir, color, hit_color, hit_t, hit_normal, hit_material
         dir = dir - 2 * np.dot(dir, hit_normal) * hit_normal
     else:
         raise ValueError("Invalid material:", hit_material)
-    dir = normalize(dir)
+    dir = dir / (np.linalg.norm(dir) + 1e-6)
     return origin, dir, color
-
-
-@njit
-def normalize(v):
-    norm = np.linalg.norm(v)
-    if norm == 0:
-        return v
-    return v / norm

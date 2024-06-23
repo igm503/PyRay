@@ -3,6 +3,7 @@ from numba import njit
 
 from ray import Ray
 from surface import Surface, Hit
+from utils import normalize
 
 NUMBA = True
 
@@ -17,8 +18,7 @@ class Triangle(Surface):
         self.ab = points[1] - points[0]
         self.ac = points[2] - points[0]
 
-        self.normal = np.cross(self.ab, self.ac)
-        self.normal = self.normal / np.linalg.norm(self.normal)
+        self.normal = normalize(np.cross(self.ab, self.ac))
 
     def check_hit(self, ray: Ray):
         if NUMBA:
