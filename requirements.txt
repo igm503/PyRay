@@ -3,3 +3,4 @@ numba==0.60.0
 numpy==2.0.0
 opencv-python==4.10.0.84
 scipy==1.13.1
+tqdm==4.66.4

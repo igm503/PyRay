@@ -3,6 +3,7 @@ import math
 
 import numpy as np
 import cv2
+from tqdm import tqdm
 
 from ray import Ray
 from surface import Surface, Hit
@@ -26,7 +27,7 @@ def get_sky_hit(ray: Ray):
         normal=np.array([0, 0.0, 0]),
         t=1,
         material="diffuse",
-        luminance=0.5,
+        luminance=0.1,
     )
 
 
@@ -59,9 +60,10 @@ class Scene:
 
         return rays
 
-    def static_render(self, view: View, num_rays: int, max_bounces: int):
+    def static_render(self, view: View, num_rays: int, max_bounces: int, save_dir: str | None = None):
+        current_img = None
         img = np.zeros((view.height, view.width, 3))
-        for i in range(num_rays):
+        for i in tqdm(range(num_rays)):
             for ray in self.get_rays(view, 1):
                 self.trace_ray(ray, max_bounces)
                 if ray.hits > 0:
@@ -70,9 +72,12 @@ class Scene:
                     )
             current_img = img / (i + 1)
             current_img = np.clip(current_img, 0, 255).astype(np.uint8)
+            render_label = f"Rendering... {i+1}/{num_rays}"
+            if save_dir is not None:
+                cv2.imwrite(f"{save_dir}/output_{i}.png", current_img)
             cv2.putText(
                 current_img,
-                f"Rendering... {i+1}/{num_rays}",
+                render_label,
                 (5, 12),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.5,
@@ -81,6 +86,7 @@ class Scene:
             )
             cv2.imshow("image", current_img)
             cv2.waitKey(1)
+        return current_img
 
     def interactive_render(self, view: View, num_rays: int, max_bounces: int):
         img = np.zeros((view.height, view.width, 3))
@@ -105,11 +111,10 @@ class Scene:
                 if hit is not None and (closest_hit is None or hit.t < closest_hit.t):
                     closest_hit = hit
             if closest_hit is None:
-                if ray.dir.dot(np.array([0, 0, 1.0])) > 0:
-                    if ray.dir.dot(np.array([0, 0, 1])) > 0.95:
-                        ray.hit(sun_hit)
-                    else:
-                        ray.hit(get_sky_hit(ray))
+                if ray.dir.dot(np.array([0, 0, 1])) > 0.98:
+                    ray.hit(sun_hit)
+                else:
+                    ray.hit(get_sky_hit(ray))
                 break
             else:
                 # hit_start = time.time()
