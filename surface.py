@@ -15,10 +15,10 @@ class Material:
 
 @dataclass
 class Hit:
-    color: np.ndarray | None = None
-    normal: np.ndarray | None = None
-    t: float | None = None
-    material: str | None = None
+    t: float
+    normal: np.ndarray
+    color: np.ndarray = np.array([0, 0, 0])
+    material: str = Material.DIFFUSE
     luminance: float = 0
 
 

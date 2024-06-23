@@ -33,14 +33,14 @@ red_sun = Sphere(
     material="diffuse",
     luminance=1.0,
 )
-sphere2 = Sphere(
+sphere1 = Sphere(
     center=np.array([0.0, 5.0, 2.0]),
     radius=1,
     color=np.array([0.5, 0, 0]),
     material="diffuse",
     luminance=0.0,
 )
-sphere3 = Sphere(
+sphere2 = Sphere(
     center=np.array([2.0, 7.0, 4.0]),
     radius=2,
     color=np.array([0.5, 0, 0]),
@@ -56,9 +56,9 @@ view = View(
     fov=90,
 )
 
-scene = Scene([red_sun, sun, sphere3, sphere2])#,  triangle1, triangle2])
+scene = Scene([red_sun, sun, sphere1, sphere2])#,  triangle1, triangle2])
 
-scene.static_render(view, num_rays=100, max_bounces=5)
+# scene.static_render(view, num_rays=100, max_bounces=5)
 last_time = time.time()
 while True:
     img = scene.interactive_render(view, num_rays=1, max_bounces=5)

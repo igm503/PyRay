@@ -3,8 +3,7 @@ from numba import njit
 
 from ray import Ray
 from surface import Surface, Hit
-
-NUMBA = True
+from constants import NUMBA
 
 
 class Sphere(Surface):
@@ -24,19 +23,11 @@ class Sphere(Surface):
 
     def check_hit(self, ray: Ray):
         if NUMBA:
-            hit, normal, t = check_hit_jit(
+            did_hit, normal, t = check_hit_jit(
                 self.center, self.radius, ray.origin, ray.dir
             )
-            if hit:
-                return Hit(
-                    color=self.color,
-                    normal=normal,
-                    t=t,
-                    material=self.material,
-                    luminance=self.luminance,
-                )
-            return None
         else:
+            did_hit = False
             ray_offset_origin = ray.origin - self.center
 
             # b = 2 * ray.dir.dot(ray_offset_origin)
@@ -57,17 +48,19 @@ class Sphere(Surface):
             if discriminant > 0:
                 t = (-b - np.sqrt(discriminant)) / 2
                 if t > 0:
+                    did_hit = True
                     hit_point = ray.origin + t * ray.dir
                     normal = (hit_point - self.center) / self.radius
-                    return Hit(
-                        color=self.color,
-                        normal=normal,
-                        t=t,
-                        material=self.material,
-                        luminance=self.luminance,
-                    )
+        if did_hit:
+            return Hit(
+                t=t,
+                normal=normal,
+                color=self.color,
+                material=self.material,
+                luminance=self.luminance,
+            )
 
-            return None
+        return None
 
 
 @njit
