@@ -3,6 +3,7 @@ import math
 import numpy as np
 
 from utils import normalize
+from metal import MetalTracer
 
 class View:
     def __init__(
@@ -15,17 +16,23 @@ class View:
         self.fov = math.radians(fov)
         self.left_dir = normalize(np.cross(np.array([0, 0, 1]), self.dir))
 
+    def to_numpy(self):
+        return np.array(
+            (self.origin, self.dir, self.fov, self.width, self.height),
+            dtype=MetalTracer.view_dtype,
+        )
+
     def forward(self):
-        self.origin = self.origin + self.dir * 0.1
+        self.origin = self.origin + self.dir * 0.5
 
     def back(self):
-        self.origin = self.origin - self.dir * 0.1
+        self.origin = self.origin - self.dir * 0.5
 
     def left(self):
-        self.origin = self.origin + self.left_dir * 0.1
+        self.origin = self.origin + self.left_dir * 0.5
 
     def right(self):
-        self.origin = self.origin - self.left_dir * 0.1
+        self.origin = self.origin - self.left_dir * 0.5
 
     def look_left(self):
         self.change_dir_horizontal(0.1)

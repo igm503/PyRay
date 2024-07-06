@@ -2,30 +2,31 @@ import numpy as np
 from numba import njit
 
 from ray import Ray
-from surface import Surface, Hit
+from surface import Surface, Hit, Material
 from utils import normalize
 from constants import NUMBA
+from metal import MetalTracer
 
 
 class Triangle(Surface):
-    def __init__(
-        self, points: np.ndarray, color: np.ndarray, material: str, luminance: float = 0
-    ):
+    def __init__(self, points: np.ndarray, material: Material):
         self.points = points
-        self.color = color
         self.material = material
-        self.luminance = luminance
 
         self.ab = points[1] - points[0]
         self.ac = points[2] - points[0]
 
         self.normal = normalize(np.cross(self.ab, self.ac))
 
+    def to_numpy(self):
+        return np.array(
+            (self.points[0], self.points[1], self.points[2], self.material.to_numpy()),
+            dtype=MetalTracer.triangle_dtype,
+        )
+
     def check_hit(self, ray: Ray):
         if NUMBA:
-            did_hit, t = check_hit_jit(
-                self.ab, self.ac, self.points[0], ray.origin, ray.dir
-            )
+            did_hit, t = check_hit_jit(self.ab, self.ac, self.points[0], ray.origin, ray.dir)
             if not did_hit:
                 return None
         else:

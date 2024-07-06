@@ -4,22 +4,30 @@ from typing import TYPE_CHECKING
 from dataclasses import dataclass
 import numpy as np
 
+from metal import MetalTracer
+
 if TYPE_CHECKING:
     from ray import Ray
 
 
+@dataclass
 class Material:
-    SPECULAR = "specular"
-    DIFFUSE = "diffuse"
+    color: np.ndarray
+    reflectivity: float = 0
+    luminance: float = 0
+
+    def to_numpy(self):
+        return np.array(
+            (self.color, self.luminance, self.reflectivity),
+            dtype=MetalTracer.material_dtype,
+        )
 
 
 @dataclass
 class Hit:
     t: float
     normal: np.ndarray
-    color: np.ndarray = np.array([0, 0, 0])
-    material: str = Material.DIFFUSE
-    luminance: float = 0
+    material: Material
 
 
 class Surface(ABC):

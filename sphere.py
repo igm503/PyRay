@@ -2,30 +2,26 @@ import numpy as np
 from numba import njit
 
 from ray import Ray
-from surface import Surface, Hit
+from surface import Surface, Hit, Material
 from constants import NUMBA
+from metal import MetalTracer
 
 
 class Sphere(Surface):
-    def __init__(
-        self,
-        center: np.ndarray,
-        radius: float,
-        color: np.ndarray,
-        material: str,
-        luminance: float = 0,
-    ):
+    def __init__(self, center: np.ndarray, radius: float, material: Material):
         self.center = center
         self.radius = radius
-        self.color = color
         self.material = material
-        self.luminance = luminance
+
+    def to_numpy(self):
+        return np.array(
+            (self.center, self.radius, self.material.to_numpy()),
+            dtype=MetalTracer.sphere_dtype,
+        )
 
     def check_hit(self, ray: Ray):
         if NUMBA:
-            did_hit, normal, t = check_hit_jit(
-                self.center, self.radius, ray.origin, ray.dir
-            )
+            did_hit, normal, t = check_hit_jit(self.center, self.radius, ray.origin, ray.dir)
         else:
             did_hit = False
             ray_offset_origin = ray.origin - self.center
