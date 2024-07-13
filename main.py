@@ -162,7 +162,6 @@ while True:
     cv2.rectangle(img, (0, 0), (width, 40), (0, 0, 0), -1)
     cv2.putText(img, info_label, (5, 15), font, 0.5, (255, 255, 255), 1)
     cv2.putText(img, fps_label, (5, 30), font, 0.5, (255, 255, 255), 1)
-
     cv2.imshow("image", img)
 
     key = cv2.waitKey(1) & 0xFF

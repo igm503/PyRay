@@ -1,6 +1,8 @@
 # PyRay
 ray tracing engine for python
 
+![Alt text](assets/example.png?raw=true "Title")
+
 # WIP
 - CUDA Acceleration [completed for metal devices; todo: cuda]
 - Some Sort of Mesh Support
