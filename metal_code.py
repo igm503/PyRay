@@ -19,12 +19,12 @@ public:
 };
 
 thread SimpleRNG::SimpleRNG(const uint seed1, const uint seed2) {
-    this->state = seed1 * 1103515245 + seed2;
+    this->state = seed1 * 1103515245 + seed2 * 4928004 / seed1;
 }
 
 
 thread float SimpleRNG::rand() {
-    this->state = this->state * 1103515245 + 12345;
+    this->state = (this->state + 51) * 1103515245 + 12345;
     return float(this->state & 0x7FFFFFFF) / float(0x7FFFFFFF);
 }
 thread float SimpleRNG::rand_normal() {
@@ -263,7 +263,7 @@ kernel void trace_rays(constant View& view[[ buffer(0) ]],
                        device packed_float3* image[[ buffer(8) ]],
                        uint id [[ thread_position_in_grid ]]) {
     // Loki rng = Loki(id, seed);
-    SimpleRNG rng = SimpleRNG(seed, id);
+    SimpleRNG rng = SimpleRNG(seed * 40, id * id);
 
     for (int ray_num = 0; ray_num < num_rays; ray_num++){
         Ray ray = get_ray(view, id, rng);
