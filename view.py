@@ -12,17 +12,17 @@ class View:
         self.origin = origin
         self.dir = normalize(dir)
         self.fov = math.radians(fov)
-        self.pixel_unit = (2.0 * math.tan(self.fov / 2.0)) / width
         self.width = width
         self.height = height
         self.left_dir = normalize(np.cross(np.array([0, 0, 1]), self.dir))
 
-        self.move_speed = 30
-        self.cam_speed = .2
+        self.move_speed = 3
+        self.cam_speed = .1
 
     def to_numpy(self):
-        right_dir = -self.left_dir * self.pixel_unit
-        down_dir = -normalize(np.cross(self.dir, self.left_dir)) * self.pixel_unit
+        pixel_unit = (2.0 * math.tan(self.fov / 2.0)) / self.width
+        right_dir = -self.left_dir * pixel_unit
+        down_dir = -normalize(np.cross(self.dir, self.left_dir)) * pixel_unit
         top_left_dir = self.dir - (self.width / 2) * right_dir - (self.height / 2) * down_dir
         return np.array(
             (self.origin, top_left_dir, right_dir, down_dir, self.width, self.height),

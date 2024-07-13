@@ -10,70 +10,133 @@ from sphere import Sphere
 from view import View
 from surface import Material
 
-triangle1 = Triangle(
-    points=np.array([[-150.0, -150.0, 0], [150, 150.0, -0], [-150.0, 150, -0]]),
-    material=Material(color=np.array([0, 0.5, 0]), reflectivity=0.0, luminance=0.0),
-)
-triangle2 = Triangle(
-    points=np.array([[-150.0, -150.0, 0], [150, -150.0, 0], [150, 150.0, -0]]),
-    material=Material(color=np.array([0, 0.5, 0]), reflectivity=0.0, luminance=0.0),
-)
-
-sun = Sphere(
-    center=np.array([-30.0, 100.0, 11.0]),
-    radius=10,
-    material=Material(color=np.array([1, 1, 1]), reflectivity=0.0, luminance=0.0),
-)
-red_sun = Sphere(
-    center=np.array([50.0, 70.0, 20.0]),
-    radius=10,
-    material=Material(color=np.array([1.0, 0.7, 0.7]), reflectivity=0.0, luminance=1.0),
-)
-sphere1 = Sphere(
-    center=np.array([0.0, 5.0, 2.0]),
-    radius=1,
-    material=Material(color=np.array([0.0, 0, 0.5]), reflectivity=0.0, luminance=0.0),
-)
-sphere2 = Sphere(
-    center=np.array([2.0, 7.0, 6.0]),
-    radius=2,
-    material=Material(color=np.array([0.0, 0, 0.5]), reflectivity=0.9, luminance=0.0),
-)
-
-sphere3 = Sphere(
-    center=np.array([3.0, 7, 2.0]),
-    radius=2,
-    material=Material(color=np.array([0.9, 0, 0]), reflectivity=0.8, luminance=0.0),
-)
-
-big_ball = Sphere(
-    center=np.array([3.0, 7.0, -300]),
-    radius=300,
-    material=Material(color=np.array([0.7, 0, 0.5]), reflectivity=0.0, luminance=0.1),
-)
-
-big_ball2 = Sphere(
-    center=np.array([700.0, 500.0, -200]),
-    radius=500,
-    material=Material(color=np.array([0.7, 0, 0.5]), reflectivity=0.02, luminance=0.1),
-)
-big_ball3 = Sphere(
-    center=np.array([200.0, 100.0, 200]),
-    radius=200,
-    material=Material(color=np.array([0.7, 0, 0.5]), reflectivity=0.9, luminance=0.1),
-)
-
-back_ball = Sphere(
-    center=np.array([-4.0, -6.0, 5]),
-    radius=3,
-    material=Material(color=np.array([0.5, 0.5, 0.5]), reflectivity=0.0, luminance=0.0),
-)
+surfaces = [
+    Triangle(
+        points=np.array([[-150.0, -150.0, 0], [150, 150.0, -0], [-150.0, 150, -0]]),
+        material=Material(color=np.array([0, 0.5, 0]), reflectivity=0.0, luminance=0.0),
+    ),
+    Triangle(
+        points=np.array([[-150.0, -150.0, 0], [150, -150.0, 0], [150, 150.0, -0]]),
+        material=Material(color=np.array([0, 0.5, 0]), reflectivity=0.0, luminance=0.0),
+    ),
+    # make a mirror wall out of two triangles
+    Triangle(
+        points=np.array([[0.0, 0.0, 0], [0, 10.0, 10], [0.0, 0, 10]]),
+        material=Material(color=np.array([0.5, 0.5, 0.5]), reflectivity=1.9, luminance=0.0),
+    ),
+    Triangle(
+        points=np.array([[0.0, 0.0, 0], [0, 10.0, 0], [0, 10.0, 10]]),
+        material=Material(color=np.array([0.5, 0.5, 0.5]), reflectivity=1.9, luminance=0.0),
+    ),
+    Triangle(
+        points=np.array([[0.0, 0.0, 10], [0, 10.0, 10], [0.0, 0, 0]]),
+        material=Material(color=np.array([0., 0., 0.]), reflectivity=0.0, luminance=0.0),
+    ),
+    Triangle(
+        points=np.array([[0.0, 10.0, 10], [0, 10.0, 0], [0, 0.0, 0]]),
+        material=Material(color=np.array([0., 0., 0.]), reflectivity=0.0, luminance=0.0),
+    ),
+    # make a second wall opposite the mirror wall
+    Triangle(
+        points=np.array([[10, 0.0, 0], [10.0, 0, 10], [10.0, 10.0, 10]]),
+        material=Material(color=np.array([0.0, 0.0, 0.0]), reflectivity=1.0, luminance=10.0),
+    ),
+    Triangle(
+        points=np.array([[10, 0.0, 0], [10, 10.0, 10], [10.0, 10.0, 0]]),
+        material=Material(color=np.array([0.0, 0.0, 0.0]), reflectivity=1.0, luminance=10.0),
+    ),
+    Triangle(
+        points=np.array([[10.0, 0.0, 0], [10, 10.0, 10], [10.0, 0, 10]]),
+        material=Material(color=np.array([0.0, 0.0, 0.0]), reflectivity=0.0, luminance=0.0),
+    ),
+    Triangle(
+        points=np.array([[10.0, 0.0, 0], [10, 10.0, 0], [10, 10.0, 10]]),
+        material=Material(color=np.array([0.0, 0.0, 0.0]), reflectivity=0.0, luminance=0.0),
+    ),
+    # make a third wall perpendicular to the first two
+    Triangle(
+        points=np.array([[0.0, 10.0, 0.0], [10, 10.0, 10], [0.0, 10.0, 10]]),
+        material=Material(color=np.array([0.0, 0.0, 0.0]), reflectivity=3.0, luminance=0.0),
+    ),
+    Triangle(
+        points=np.array([[0.0, 10.0, 0.0], [10, 10.0, 0], [10, 10.0, 10]]),
+        material=Material(color=np.array([0.0, 0.0, 0.0]), reflectivity=1.0, luminance=0.0),
+    ),
+    Triangle(
+        points=np.array([[0.0, 10.0, 10.0], [10, 10.0, 0], [0.0, 10.0, 0]]),
+        material=Material(color=np.array([0.0, 0.0, 0.0]), reflectivity=0.0, luminance=0.0),
+    ),
+    Triangle(
+        points=np.array([[0.0, 10.0, 10], [10, 10.0, 10], [10, 10.0, 0]]),
+        material=Material(color=np.array([0.0, 0.0, 0.0]), reflectivity=0.0, luminance=0.0),
+    ),
+    # now the ceiling
+    Triangle(
+        points=np.array([[0.0, 0.0, 0.0], [10, 0.0, 10], [0.0, 0.0, 10]]),
+        material=Material(color=np.array([0.0, 0.0, 0.0]), reflectivity=0.0, luminance=0.0),
+    ),
+    Triangle(
+        points=np.array([[0.0, 0.0, 0.0], [10, 0.0, 0], [10, 0.0, 10]]),
+        material=Material(color=np.array([0.0, 0.0, 0.0]), reflectivity=0.0, luminance=0.0),
+    ),
+    Triangle(
+        points=np.array([[0.0, 0.0, 0.0], [0, 0.0, 10], [10.0, 0.0, 10]]),
+        material=Material(color=np.array([0.0, 0.0, 0.0]), reflectivity=1.0, luminance=0.0),
+    ),
+    Triangle(
+        points=np.array([[10.0, 0.0, 10.0], [10, 0.0, 0], [0, 0.0,0]]),
+        material=Material(color=np.array([0.0, 0.0, 0.0]), reflectivity=1.0, luminance=0.0),
+    ),
+    Sphere(
+        center=np.array([-30.0, 100.0, 11.0]),
+        radius=10,
+        material=Material(color=np.array([1, 1, 1]), reflectivity=0.0, luminance=0.0),
+    ),
+    Sphere(
+        center=np.array([50.0, 70.0, 20.0]),
+        radius=10,
+        material=Material(color=np.array([1.0, 0.7, 0.7]), reflectivity=0.0, luminance=1.0),
+    ),
+    Sphere(
+        center=np.array([0.0, 5.0, 2.0]),
+        radius=1,
+        material=Material(color=np.array([0.0, 0, 0.5]), reflectivity=0.0, luminance=1.0),
+    ),
+    Sphere(
+        center=np.array([-12.0, 7.0, 6.0]),
+        radius=2,
+        material=Material(color=np.array([0.0, 0, 0.5]), reflectivity=0.95, luminance=0.0),
+    ),
+    Sphere(
+        center=np.array([-13.0, 7, 2.0]),
+        radius=2,
+        material=Material(color=np.array([0.9, 0, 0]), reflectivity=0.95, luminance=0.0),
+    ),
+    Sphere(
+        center=np.array([3.0, 7.0, -300]),
+        radius=300,
+        material=Material(color=np.array([0.7, 0, 0.5]), reflectivity=0.0, luminance=0.1),
+    ),
+    Sphere(
+        center=np.array([700.0, 500.0, -200]),
+        radius=500,
+        material=Material(color=np.array([0.7, 0, 0.5]), reflectivity=0.02, luminance=0.1),
+    ),
+    Sphere(
+        center=np.array([200.0, 100.0, 200]),
+        radius=200,
+        material=Material(color=np.array([0.7, 0, 0.5]), reflectivity=0.9, luminance=0.1),
+    ),
+    Sphere(
+        center=np.array([-4.0, -6.0, 5]),
+        radius=3,
+        material=Material(color=np.array([0.5, 0.5, 0.5]), reflectivity=0.0, luminance=0.0),
+    ),
+]
 
 view = View(
-    # origin=np.array([0, -1.0, 2.0]),
-    # dir=np.array([0, 0.2, 0]),
-    origin=np.array([10, -4.0, 5.0]),
-    dir=np.array([-.35, 0.0, 0]),
+    origin=np.array([-30, -14.0, 5.0]),
+    dir=np.array([0.1, 0.1, 0]),
     width=1920,
     height=1080,
     # width=240,
@@ -81,12 +144,11 @@ view = View(
     fov=70,
 )
 
-scene = Scene(
-    [back_ball, big_ball, big_ball2, big_ball3, red_sun, sun, sphere1, sphere2, sphere3, triangle1, triangle2])
+scene = Scene(surfaces)
 
 last_time = time.time()
 while True:
-    img = scene.render(view, num_rays=10, max_bounces=500, device="metal")
+    img = scene.render(view, num_rays=10, max_bounces=50, device="metal")
     img = cv2.resize(img, (3840, 2160), interpolation=cv2.INTER_NEAREST)
 
     fps = round(1 / (time.time() - last_time), 2)
@@ -122,3 +184,11 @@ while True:
         view.look_left()
     elif key == ord("l"):
         view.look_right()
+    elif key == ord("r"):
+        view.height = 2160
+        view.width = 3840
+        img = scene.cumulative_render(view, num_rays=1000, max_bounces=500, device="metal", save_dir="output")
+    elif key == ord("="):
+        view.fov -= 0.05 * view.fov
+    elif key == ord("-"):
+        view.fov += 0.05 * view.fov
