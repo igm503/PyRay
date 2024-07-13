@@ -3,7 +3,7 @@ import math
 import numpy as np
 
 from utils import normalize
-from metal import MetalTracer
+from metal import MetalTypes
 
 class View:
     def __init__(
@@ -26,7 +26,7 @@ class View:
         top_left_dir = self.dir - (self.width / 2) * right_dir - (self.height / 2) * down_dir
         return np.array(
             (self.origin, top_left_dir, right_dir, down_dir, self.width, self.height),
-            dtype=MetalTracer.view_dtype,
+            dtype=MetalTypes.view_dtype,
         )
 
     def forward(self):

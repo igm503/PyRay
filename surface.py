@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from dataclasses import dataclass
 import numpy as np
 
-from metal import MetalTracer
+from metal import MetalTypes
 
 if TYPE_CHECKING:
     from ray import Ray
@@ -19,7 +19,7 @@ class Material:
     def to_numpy(self):
         return np.array(
             (self.color, self.luminance, self.reflectivity),
-            dtype=MetalTracer.material_dtype,
+            dtype=MetalTypes.material_dtype,
         )
 
 

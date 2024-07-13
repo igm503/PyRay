@@ -4,7 +4,7 @@ from numba import njit
 from ray import Ray
 from surface import Surface, Hit, Material
 from constants import NUMBA
-from metal import MetalTracer
+from metal import MetalTypes
 
 
 class Sphere(Surface):
@@ -16,7 +16,7 @@ class Sphere(Surface):
     def to_numpy(self):
         return np.array(
             (self.center, self.radius, self.material.to_numpy()),
-            dtype=MetalTracer.sphere_dtype,
+            dtype=MetalTypes.sphere_dtype,
         )
 
     def check_hit(self, ray: Ray):
