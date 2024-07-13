@@ -263,7 +263,7 @@ kernel void trace_rays(constant View& view[[ buffer(0) ]],
                        device packed_float3* image[[ buffer(8) ]],
                        uint id [[ thread_position_in_grid ]]) {
     // Loki rng = Loki(id, seed);
-    SimpleRNG rng = SimpleRNG(seed * 40, id * id);
+    SimpleRNG rng = SimpleRNG(seed * 400, id * id);
 
     for (int ray_num = 0; ray_num < num_rays; ray_num++){
         Ray ray = get_ray(view, id, rng);

@@ -22,12 +22,30 @@ sun_hit = Hit(
 
 def get_sky_hit(ray: Ray):
     ground_plane_component = ray.dir[0] ** 2 + ray.dir[1] ** 2
-    color = np.array([1, 0.9, 0.5]) + np.array([0, 0.1, 0.5]) * ground_plane_component
-    return Hit(
-        t=1,
-        normal=np.array([0, 0.0, 0]),
-        material=Material(color=color, reflectivity=0.0, luminance=0.5),
-    )
+    color = np.array([0.5, 0.9, 1.0]) + np.array([0.5, 0.1, 0]) * ground_plane_component
+
+
+SUN = np.array((1.0, 0.68, 0.26))
+WHITE = np.array((1.0, 1.0, 1.0))
+SKY = np.array((0.53, 0.81, 0.92))
+
+
+def get_environment_hit(ray: Ray):
+    if ray.dir[-1] > 0.99:
+        scale = (ray.dir[-1] - 0.98) / 0.02
+        return Hit(
+            t=1,
+            normal=np.array([0, 0.0, 0]),
+            material=Material(
+                color=scale * WHITE + (1 - scale) * SUN, reflectivity=0.0, luminance=1.0
+            ),
+        )
+    else:
+        return Hit(
+            t=1,
+            normal=np.array([0, 0.0, 0]),
+            material=Material(color=SKY, reflectivity=0.0, luminance=0.5),
+        )
 
 
 class Scene:
@@ -108,8 +126,9 @@ class Scene:
         for ray in self.get_rays(view, num_rays):
             self.trace_ray(ray, max_bounces)
             if ray.hits > 0:
-                img[ray.pixel_coords[::-1]] += ray.color * min(ray.luminance, 1.0) * 255
+                img[ray.pixel_coords[::-1]] += ray.color * ray.luminance
         img /= num_rays
+        img = ((1 - np.exp(-img * 5.5)) * 255).astype(np.uint8)
         img = np.clip(img, 0, 255).astype(np.uint8)
         return img
 
@@ -121,10 +140,8 @@ class Scene:
                 if hit is not None and (closest_hit is None or hit.t < closest_hit.t):
                     closest_hit = hit
             if closest_hit is None:
-                if ray.dir.dot(np.array([0, 0, 1])) > 0.98:
-                    ray.hit(sun_hit)
-                else:
-                    ray.hit(get_sky_hit(ray))
+                hit = get_environment_hit(ray)
+                ray.hit(hit)
                 break
             else:
                 ray.hit(closest_hit)

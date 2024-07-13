@@ -14,7 +14,7 @@ class Ray:
         self.dir = normalize(dir)
         self.pixel_coords = pixel_coords
         self.color = np.array([1.0, 1, 1])
-        self.luminance = 0
+        self.luminance = 0.0
         self.hits = 0
 
     def hit(self, hit: Hit):
@@ -38,7 +38,7 @@ class Ray:
                 self.dir = self.dir - 2 * self.dir.dot(hit.normal) * hit.normal
             else:
                 self.color = self.color * hit.material.color
-                random_dir = np.random.normal(0, 1, (3))
+                random_dir = hit.normal + np.random.normal(0, 1, (3))
                 if random_dir.dot(hit.normal) < 0:
                     random_dir = -random_dir
                 self.dir = random_dir
@@ -52,7 +52,7 @@ def hit_optimized(origin, dir, color, hit_color, t, normal, reflectivity):
         dir = dir - 2 * np.dot(dir, normal) * normal
     else:
         color = color * hit_color
-        random_dir = np.random.normal(0, 1, 3)
+        random_dir = normal + np.random.normal(0, 1, 3)
         if np.dot(random_dir, normal) < 0:
             random_dir = -random_dir
         dir = random_dir

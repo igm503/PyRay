@@ -74,10 +74,10 @@ view = View(
     # dir=np.array([0, 0.2, 0]),
     origin=np.array([10, -4.0, 5.0]),
     dir=np.array([-.35, 0.0, 0]),
-    width=1920,
-    height=1080,
-    # width=240,
-    # height=120,
+    # width=1920,
+    # height=1080,
+    width=240,
+    height=120,
     fov=70,
 )
 
@@ -88,7 +88,7 @@ scene = Scene(
 # img = scene.static_render(view, num_rays=200, max_bounces=30, save_dir="big_ball_bright")
 last_time = time.time()
 while True:
-    img = scene.metal_render(view, num_rays=10, max_bounces=5)
+    img = scene.metal_render(view, num_rays=1, max_bounces=5)
     img = cv2.resize(img, (3840, 2160), interpolation=cv2.INTER_NEAREST)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
@@ -99,6 +99,8 @@ while True:
     info_label = f"pos: {np.round(view.origin, 2)}, dir: {np.round(view.dir, 2)}, fov: {math.degrees(view.fov)}"
     print(fps_label, info_label)
     font = cv2.FONT_HERSHEY_SIMPLEX
+    width = len(info_label) * 9
+    cv2.rectangle(img, (0, 0), (width, 40), (0, 0, 0), -1)
     cv2.putText(img, info_label, (5, 15), font, 0.5, (255, 255, 255), 1)
     cv2.putText(img, fps_label, (5, 30), font, 0.5, (255, 255, 255), 1)
 
