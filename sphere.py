@@ -51,9 +51,7 @@ class Sphere(Surface):
             return Hit(
                 t=t,
                 normal=normal,
-                color=self.color,
                 material=self.material,
-                luminance=self.luminance,
             )
 
         return None

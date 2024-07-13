@@ -101,18 +101,17 @@ thread float Loki::rand_normal() {
 struct Ray{
     packed_float3 origin;
     packed_float3 dir;
-    int2 pixel;
     packed_float3 color;
     float intensity;
 };
 
 struct View{
     packed_float3 origin;
-    packed_float3 dir;
-    float fov;
+    packed_float3 top_left_dir;
+    packed_float3 right_dir;
+    packed_float3 down_dir;
     int width;
     int height;
-    int num_rays;
 };
 
 struct Material{
@@ -184,7 +183,7 @@ Ray add_environment(Ray ray){
     }
     else {
         color = sky_color;
-        ray.intensity += 0.1;
+        ray.intensity += 0.5;
     }
     ray.color = ray.color * color;
     return ray;
@@ -242,32 +241,15 @@ Hit triangle_hit(Ray ray, Triangle triangle){
 }
 
 Ray get_ray(constant View& view, uint base_id, thread SimpleRNG& rng){
-    packed_float3 projection_center = view.origin + view.dir;
-    packed_float3 left_dir = normalize(cross(packed_float3(0.0f, 0.0f, 1.0f), view.dir));
-    packed_float3 up_dir = normalize(cross(view.dir, left_dir));
-    float pixel_unit = (2.0f * tan(view.fov / 2.0f)) / static_cast<float>(view.width);
-    packed_float3 top_left = projection_center + tan(view.fov / 2.0f) * left_dir + (pixel_unit * view.height / 2) * up_dir;
-    packed_float3 right_dir = -left_dir;
-    packed_float3 down_dir = -up_dir;
+    float x_offset = static_cast<float>(base_id % view.width) + rng.rand() - 0.5f;
+    int y_offset = static_cast<float>(base_id / view.width) + rng.rand() - 0.5f;
 
-    int x = base_id % view.width;
-    int y = base_id / view.width;
-
-    float x_offset = static_cast<float>(x) * pixel_unit;
-    float y_offset = static_cast<float>(y) * pixel_unit;
-
-    float jitter_x = rng.rand() - 0.5f;
-    float jitter_y = rng.rand() - 0.5f;
-    
-    x_offset += jitter_x * pixel_unit;
-    y_offset += jitter_y * pixel_unit;
-    
-    Ray ray;
-    ray.origin = view.origin;
-    ray.dir = normalize(top_left + x_offset * right_dir + y_offset * down_dir - view.origin);
-    ray.color = packed_float3(1.0f, 1.0f, 1.0f);
-    ray.intensity = 0.0f;
-    return ray;
+    return Ray {
+        view.origin,
+        normalize(view.top_left_dir + x_offset * view.right_dir + y_offset * view.down_dir),
+        packed_float3(1.0f, 1.0f, 1.0f),
+        0.0f
+    };
 }
 
 kernel void trace_rays(constant View& view[[ buffer(0) ]],

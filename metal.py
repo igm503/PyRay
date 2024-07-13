@@ -15,11 +15,13 @@ class MetalTracer:
         ]
     )
 
+
     view_dtype = np.dtype(
         [
             ("origin", np.float32, 3),
-            ("direction", np.float32, 3),
-            ("fov", np.float32, 1),
+            ("top_left_dir", np.float32, 3),
+            ("right_dir", np.float32, 3),
+            ("down_dir", np.float32, 3),
             ("width", np.int32, 1),
             ("height", np.int32, 1),
         ]

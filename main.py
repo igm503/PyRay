@@ -37,7 +37,7 @@ sphere1 = Sphere(
 sphere2 = Sphere(
     center=np.array([2.0, 7.0, 6.0]),
     radius=2,
-    material=Material(color=np.array([0.0, 0, 0.5]), reflectivity=0.1, luminance=0.0),
+    material=Material(color=np.array([0.0, 0, 0.5]), reflectivity=0.9, luminance=0.0),
 )
 
 sphere3 = Sphere(
@@ -52,6 +52,17 @@ big_ball = Sphere(
     material=Material(color=np.array([0.7, 0, 0.5]), reflectivity=0.0, luminance=0.1),
 )
 
+big_ball2 = Sphere(
+    center=np.array([700.0, 500.0, -200]),
+    radius=500,
+    material=Material(color=np.array([0.7, 0, 0.5]), reflectivity=0.02, luminance=0.1),
+)
+big_ball3 = Sphere(
+    center=np.array([200.0, 100.0, 200]),
+    radius=200,
+    material=Material(color=np.array([0.7, 0, 0.5]), reflectivity=0.9, luminance=0.1),
+)
+
 back_ball = Sphere(
     center=np.array([-4.0, -6.0, 5]),
     radius=3,
@@ -61,25 +72,24 @@ back_ball = Sphere(
 view = View(
     # origin=np.array([0, -1.0, 2.0]),
     # dir=np.array([0, 0.2, 0]),
-    origin=np.array([10, -4.0, 15.0]),
-    dir=np.array([-.35, 0.0, -.9]),
-    width=1920,
-    height=1080,
-    # width=960,
-    # height=480,
-    fov=100,
+    origin=np.array([10, -4.0, 5.0]),
+    dir=np.array([-.35, 0.0, 0]),
+    # width=1920,
+    # height=1080,
+    width=240,
+    height=120,
+    fov=70,
 )
 
 scene = Scene(
-    [back_ball, big_ball, red_sun, sun, sphere1, sphere2, sphere3]
+    [back_ball, big_ball, big_ball2, big_ball3, red_sun, sun, sphere1, sphere2, sphere3]
 )  # , triangle1, triangle2])
 
 # img = scene.static_render(view, num_rays=200, max_bounces=30, save_dir="big_ball_bright")
 last_time = time.time()
 while True:
-    img = scene.metal_render(view, num_rays=10, max_bounces=50)
-    if img.shape[0] < 480:
-        img = cv2.resize(img, (960, 480), interpolation=cv2.INTER_NEAREST)
+    img = scene.metal_render(view, num_rays=1, max_bounces=5)
+    img = cv2.resize(img, (3840, 2160), interpolation=cv2.INTER_NEAREST)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
     fps = round(1 / (time.time() - last_time), 2)

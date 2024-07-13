@@ -29,7 +29,6 @@ class Hit:
     normal: np.ndarray
     material: Material
 
-
 class Surface(ABC):
     @abstractmethod
     def check_hit(self, ray: "Ray") -> Hit | None:

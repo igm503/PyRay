@@ -11,34 +11,41 @@ class View:
     ):
         self.origin = origin
         self.dir = normalize(dir)
+        self.fov = math.radians(fov)
+        self.pixel_unit = (2.0 * math.tan(self.fov / 2.0)) / width
         self.width = width
         self.height = height
-        self.fov = math.radians(fov)
         self.left_dir = normalize(np.cross(np.array([0, 0, 1]), self.dir))
 
+        self.move_speed = 30
+        self.cam_speed = .2
+
     def to_numpy(self):
+        right_dir = -self.left_dir * self.pixel_unit
+        down_dir = -normalize(np.cross(self.dir, self.left_dir)) * self.pixel_unit
+        top_left_dir = self.dir - (self.width / 2) * right_dir - (self.height / 2) * down_dir
         return np.array(
-            (self.origin, self.dir, self.fov, self.width, self.height),
+            (self.origin, top_left_dir, right_dir, down_dir, self.width, self.height),
             dtype=MetalTracer.view_dtype,
         )
 
     def forward(self):
-        self.origin = self.origin + self.dir * 0.5
+        self.origin = self.origin + self.dir * self.move_speed
 
     def back(self):
-        self.origin = self.origin - self.dir * 0.5
+        self.origin = self.origin - self.dir * self.move_speed
 
     def left(self):
-        self.origin = self.origin + self.left_dir * 0.5
+        self.origin = self.origin + self.left_dir * self.move_speed
 
     def right(self):
-        self.origin = self.origin - self.left_dir * 0.5
+        self.origin = self.origin - self.left_dir * self.move_speed
 
     def look_left(self):
-        self.change_dir_horizontal(0.1)
+        self.change_dir_horizontal(self.cam_speed)
 
     def look_right(self):
-        self.change_dir_horizontal(-0.1)
+        self.change_dir_horizontal(-self.cam_speed)
 
     def change_dir_horizontal(self, d_theta):
         x_y_magnitude = np.sqrt(self.dir[0] ** 2 + self.dir[1] ** 2)
@@ -49,10 +56,10 @@ class View:
         self.left_dir = normalize(np.cross(np.array([0, 0, 1]), self.dir))
 
     def look_up(self):
-        self.change_dir_vertical(0.1)
+        self.change_dir_vertical(self.cam_speed)
 
     def look_down(self):
-        self.change_dir_vertical(-0.1)
+        self.change_dir_vertical(-self.cam_speed)
 
     def change_dir_vertical(self, d_theta):
         horizontal_vec = np.array([self.dir[0], self.dir[1], 0])

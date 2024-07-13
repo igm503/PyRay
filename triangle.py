@@ -65,9 +65,7 @@ class Triangle(Surface):
         return Hit(
             t=t,
             normal=self.normal,
-            color=self.color,
             material=self.material,
-            luminance=self.luminance,
         )
 
 
