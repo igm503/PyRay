@@ -214,7 +214,7 @@ Hit triangle_hit(Ray ray, Triangle triangle){
     float3 pvec = cross(ray.dir, ac);
     float det = dot(ab, pvec);
 
-    if (det < epsilon){
+    if (det < epsilon ){
         return no_hit;
     }
 
@@ -232,6 +232,9 @@ Hit triangle_hit(Ray ray, Triangle triangle){
     }
 
     float t = dot(ac, qvec) * inv_det;
+    if (t < 10 * epsilon){
+        return no_hit;
+    }
     return Hit {
         true,
         t,

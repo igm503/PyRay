@@ -62,6 +62,9 @@ class Triangle(Surface):
                 return None
 
             t = (self.ac[0] * qvec0 + self.ac[1] * qvec1 + self.ac[2] * qvec2) * inv_det
+            if t < 10 * epsilon:
+                return None
+
         return Hit(
             t=t,
             normal=self.normal,
@@ -103,4 +106,7 @@ def check_hit_jit(ab, ac, point0, ray_origin, ray_dir):
         return False, 0.0
 
     t = (ac[0] * qvec0 + ac[1] * qvec1 + ac[2] * qvec2) * inv_det
+    if t < 10 * epsilon:
+        return False, 0.0
+
     return True, t

@@ -12,11 +12,11 @@ from surface import Material
 
 surfaces = [
     Triangle(
-        points=np.array([[-150.0, -150.0, 0], [150, 150.0, -0], [-150.0, 150, -0]]),
+        points=np.array([[-15000.0, -15000.0, 0], [15000, 15000.0, -0], [-15000.0, 15000, -0]]),
         material=Material(color=np.array([0, 0.5, 0]), reflectivity=0.0, luminance=0.0),
     ),
     Triangle(
-        points=np.array([[-150.0, -150.0, 0], [150, -150.0, 0], [150, 150.0, -0]]),
+        points=np.array([[-15000.0, -15000.0, 0], [15000, -15000.0, 0], [15000, 15000.0, -0]]),
         material=Material(color=np.array([0, 0.5, 0]), reflectivity=0.0, luminance=0.0),
     ),
     # make a mirror wall out of two triangles
@@ -53,7 +53,7 @@ surfaces = [
         points=np.array([[10.0, 0.0, 0], [10, 10.0, 0], [10, 10.0, 10]]),
         material=Material(color=np.array([0.0, 0.0, 0.0]), reflectivity=0.0, luminance=0.0),
     ),
-    # make a third wall perpendicular to the first two
+    # a third wall perpendicular to the first two
     Triangle(
         points=np.array([[0.0, 10.0, 0.0], [10, 10.0, 10], [0.0, 10.0, 10]]),
         material=Material(color=np.array([0.0, 0.0, 0.0]), reflectivity=3.0, luminance=0.0),
@@ -70,7 +70,7 @@ surfaces = [
         points=np.array([[0.0, 10.0, 10], [10, 10.0, 10], [10, 10.0, 0]]),
         material=Material(color=np.array([0.0, 0.0, 0.0]), reflectivity=0.0, luminance=0.0),
     ),
-    # now the ceiling
+    # now the fourth wall. Should probably put a ceiling too.
     Triangle(
         points=np.array([[0.0, 0.0, 0.0], [10, 0.0, 10], [0.0, 0.0, 10]]),
         material=Material(color=np.array([0.0, 0.0, 0.0]), reflectivity=0.0, luminance=0.0),
@@ -148,7 +148,7 @@ scene = Scene(surfaces)
 
 last_time = time.time()
 while True:
-    img = scene.render(view, num_rays=10, max_bounces=50, device="metal")
+    img = scene.render(view, num_rays=6, max_bounces=50, device="metal")
     img = cv2.resize(img, (3840, 2160), interpolation=cv2.INTER_NEAREST)
 
     fps = round(1 / (time.time() - last_time), 2)
