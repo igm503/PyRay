@@ -1,9 +1,10 @@
+
 import math
 
 import numpy as np
 
-from utils import normalize
-from metal import MetalTypes
+from .types import MetalTypes
+from .utils import normalize
 
 class View:
     def __init__(

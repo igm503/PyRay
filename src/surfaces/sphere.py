@@ -1,10 +1,10 @@
 import numpy as np
 from numba import njit
 
-from ..ray import Ray
-from .surface import Surface, Hit, Material
+from .surface import Surface, Material
+from ..ray import Ray, Hit
 from ..constants import NUMBA
-from ..engine.metal import MetalTypes
+from ..types import MetalTypes
 
 
 class Sphere(Surface):

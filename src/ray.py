@@ -1,11 +1,22 @@
+from typing import TYPE_CHECKING
 import random
+from dataclasses import dataclass
 
 import numpy as np
 from numba import njit
 
-from surface import Hit
-from utils import normalize
-from constants import NUMBA
+from .utils import normalize
+from .constants import NUMBA
+
+if TYPE_CHECKING:
+    from .surfaces import Material
+
+
+@dataclass
+class Hit:
+    t: float
+    normal: np.ndarray
+    material: "Material"
 
 
 class Ray:

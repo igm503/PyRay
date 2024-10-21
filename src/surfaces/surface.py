@@ -4,10 +4,11 @@ from typing import TYPE_CHECKING
 from dataclasses import dataclass
 import numpy as np
 
-from metal import MetalTypes
+from ..types import MetalTypes
+
 
 if TYPE_CHECKING:
-    from ray import Ray
+    from ..ray import Ray, Hit
 
 
 @dataclass
@@ -23,13 +24,7 @@ class Material:
         )
 
 
-@dataclass
-class Hit:
-    t: float
-    normal: np.ndarray
-    material: Material
-
 class Surface(ABC):
     @abstractmethod
-    def check_hit(self, ray: "Ray") -> Hit | None:
+    def check_hit(self, ray: "Ray") -> "Hit | None":
         pass

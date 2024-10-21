@@ -1,11 +1,11 @@
 import numpy as np
 from numba import njit
 
-from ray import Ray
-from surface import Surface, Hit, Material
-from utils import normalize
-from constants import NUMBA
-from metal import MetalTypes
+from .surface import Surface, Material
+from ..ray import Ray, Hit
+from ..utils import normalize
+from ..constants import NUMBA
+from ..types import MetalTypes
 
 
 class Triangle(Surface):

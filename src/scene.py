@@ -1,14 +1,10 @@
-import time
 import numpy as np
 import cv2
 from tqdm import tqdm
 
-from surface import Surface
-from triangle import Triangle
-from sphere import Sphere
-from view import View
-from metal import MetalTracer
-from cpu import CPUTracer
+from .surfaces import Surface, Triangle, Sphere
+from .view import View
+from .engine import MetalTracer, CPUTracer
 
 
 class Scene:

@@ -4,11 +4,7 @@ import math
 import cv2
 import numpy as np
 
-from scene import Scene
-from triangle import Triangle
-from sphere import Sphere
-from view import View
-from surface import Material
+from src import Scene, View, Triangle, Sphere, Material
 
 surfaces = [
     Triangle(
@@ -148,7 +144,7 @@ scene = Scene(surfaces)
 
 last_time = time.time()
 while True:
-    img = scene.render(view, num_rays=6, max_bounces=50, device="metal")
+    img = scene.render(view, num_rays=10, max_bounces=50, device="metal")
     img = cv2.resize(img, (3840, 2160), interpolation=cv2.INTER_NEAREST)
 
     fps = round(1 / (time.time() - last_time), 2)

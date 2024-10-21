@@ -1,12 +1,9 @@
 import numpy as np
 
-from view import View
-from ray import Ray
-from sphere import Sphere
-from triangle import Triangle
-from surface import Surface, Hit, Material
-
-from utils import normalize
+from ..view import View
+from ..ray import Ray, Hit
+from ..surfaces import Surface, Material, Triangle, Sphere
+from ..utils import normalize
 
 SUN = np.array((1.0, 0.68, 0.26))
 WHITE = np.array((1.0, 1.0, 1.0))
@@ -21,7 +18,7 @@ class CPUTracer:
         triangles: list[Triangle],
         num_rays: int,
         max_bounces: int,
-        exposure: float
+        exposure: float,
     ):
         img = np.zeros((view.height, view.width, 3))
         for ray in self.get_rays(view, num_rays):
