@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import cv2
 from tqdm import tqdm
@@ -23,17 +25,27 @@ class Scene:
         device: str = "metal",
         save_dir: str | None = None,
     ):
+        if save_dir is not None:
+            sub_dir = "1"
+            path = os.path.join(save_dir, sub_dir)
+            while os.path.exists(path):
+                sub_dir = str(int(sub_dir) + 1)
+                path = os.path.join(save_dir, sub_dir)
+            os.makedirs(path)
+            save_dir = path
+
         current_img = None
         img = np.zeros((view.height, view.width, 3))
+        print(f"Rendering {num_rays} rays. Will save to {save_dir}")
         for i in tqdm(range(num_rays)):
             img += self.render(view, 1, max_bounces, exposure, device)
             current_img = img / (i + 1)
             current_img = np.clip(current_img, 0, 255).astype(np.uint8)
-            print(f"Rendering... {i+1}/{num_rays}")
             if save_dir is not None:
                 cv2.imwrite(f"{save_dir}/output_{i}.png", current_img)
             cv2.imshow("image", current_img)
             cv2.waitKey(1)
+        print(f"Renders are saved to {save_dir}")
         return current_img
 
     def render(

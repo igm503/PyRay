@@ -4,6 +4,17 @@ view:
   width: 1920
   height: 1080
   fov: 70
+  exposure: 3.0
+  num_samples: 10
+  max_bounces: 50
+
+save_render:
+  save_path: renders/default
+  width: 3840
+  height: 2160
+  exposure: 3.0
+  num_samples: 1000
+  max_bounces: 100
 
 surfaces:
   
