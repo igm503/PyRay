@@ -9,12 +9,12 @@ from ..types import MetalTypes
 
 
 class Triangle(Surface):
-    def __init__(self, points: np.ndarray, material: Material):
-        self.points = points
+    def __init__(self, points: list, material: Material):
+        self.points = np.array(points)
         self.material = material
 
-        self.ab = points[1] - points[0]
-        self.ac = points[2] - points[0]
+        self.ab = self.points[1] - self.points[0]
+        self.ac = self.points[2] - self.points[0]
 
         self.normal = normalize(np.cross(self.ab, self.ac))
 

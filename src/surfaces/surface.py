@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from dataclasses import dataclass
 import numpy as np
 
 from ..types import MetalTypes
@@ -11,11 +10,11 @@ if TYPE_CHECKING:
     from ..ray import Ray, Hit
 
 
-@dataclass
 class Material:
-    color: np.ndarray
-    reflectivity: float = 0
-    luminance: float = 0
+    def __init__(self, color: list, reflectivity: float = 0, luminance: float = 0):
+        self.color = np.array(color)
+        self.reflectivity = reflectivity
+        self.luminance = luminance
 
     def to_numpy(self):
         return np.array(

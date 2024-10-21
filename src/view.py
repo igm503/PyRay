@@ -1,4 +1,3 @@
-
 import math
 
 import numpy as np
@@ -6,19 +5,25 @@ import numpy as np
 from .types import MetalTypes
 from .utils import normalize
 
+
 class View:
     def __init__(
-        self, origin: np.ndarray, dir: np.ndarray, width: int, height: int, fov: float
+        self,
+        origin: list = [0, 0, 0],
+        dir: list = [0, 1, 0],
+        width: int = 1920,
+        height: int = 1080,
+        fov: float = 70,
     ):
-        self.origin = origin
-        self.dir = normalize(dir)
+        self.origin = np.array(origin)
+        self.dir = normalize(np.array(dir))
         self.fov = math.radians(fov)
         self.width = width
         self.height = height
         self.left_dir = normalize(np.cross(np.array([0, 0, 1]), self.dir))
 
         self.move_speed = 3
-        self.cam_speed = .1
+        self.cam_speed = 0.1
 
     def to_numpy(self):
         pixel_unit = (2.0 * math.tan(self.fov / 2.0)) / self.width

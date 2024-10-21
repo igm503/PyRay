@@ -8,8 +8,8 @@ from ..types import MetalTypes
 
 
 class Sphere(Surface):
-    def __init__(self, center: np.ndarray, radius: float, material: Material):
-        self.center = center
+    def __init__(self, center: list, radius: float, material: Material):
+        self.center = np.array(center)
         self.radius = radius
         self.material = material
 
