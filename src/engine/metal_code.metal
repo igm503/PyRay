@@ -1,4 +1,5 @@
 #include <metal_stdlib>
+
 using namespace metal;
 
 constant float epsilon = 1e-6;
@@ -66,14 +67,13 @@ struct Triangle {
 };
 
 struct Hit {
-  bool hit;
   float t;
   packed_float3 normal;
   Material material;
 };
 
 constant Hit no_hit =
-    Hit{false, 0.0f, packed_float3(0.0f, 0.0f, 0.0f),
+    Hit{INFINITY, packed_float3(0.0f, 0.0f, 0.0f),
         Material{packed_float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f}};
 
 bool check_specular(float reflectivity, thread SimpleRNG &rng) {
@@ -113,17 +113,27 @@ Ray add_environment(Ray ray) {
   return ray;
 }
 
+Ray get_ray(constant View &view, uint base_id, thread SimpleRNG &rng) {
+  float x_offset = static_cast<float>(base_id % view.width) + rng.rand() - 0.5f;
+  int y_offset = static_cast<float>(base_id / view.width) + rng.rand() - 0.5f;
+
+  return Ray{view.origin,
+             normalize(view.top_left_dir + x_offset * view.right_dir +
+                       y_offset * view.down_dir),
+             packed_float3(1.0f, 1.0f, 1.0f), 0.0f};
+}
+
 Hit sphere_hit(Ray ray, Sphere sphere) {
   packed_float3 ray_offset_origin = ray.origin - sphere.center;
   float b = 2 * dot(ray.dir, ray_offset_origin);
   float c =
-      dot(ray_offset_origin, ray_offset_origin) - sphere.radius * sphere.radius;
+      dot(ray_offset_origin, ray_offset_origin) - pow(sphere.radius, 2);
   float discriminant = b * b - 4 * c;
   if (discriminant > 0) {
     float t = (-b - sqrt(discriminant)) / 2.0f;
     if (t > 0) {
       return Hit{
-          true, t,
+          t,
           normalize((ray.origin + t * ray.dir - sphere.center) / sphere.radius),
           sphere.material};
     }
@@ -158,17 +168,8 @@ Hit triangle_hit(Ray ray, Triangle triangle) {
   if (t < 10 * epsilon) {
     return no_hit;
   }
-  return Hit{true, t, normalize(cross(ab, ac)), triangle.material};
-}
 
-Ray get_ray(constant View &view, uint base_id, thread SimpleRNG &rng) {
-  float x_offset = static_cast<float>(base_id % view.width) + rng.rand() - 0.5f;
-  int y_offset = static_cast<float>(base_id / view.width) + rng.rand() - 0.5f;
-
-  return Ray{view.origin,
-             normalize(view.top_left_dir + x_offset * view.right_dir +
-                       y_offset * view.down_dir),
-             packed_float3(1.0f, 1.0f, 1.0f), 0.0f};
+  return Hit{t, normalize(cross(ab, ac)), triangle.material};
 }
 
 kernel void trace_rays(constant View &view [[buffer(0)]],
@@ -179,32 +180,32 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
                        constant int &num_bounces [[buffer(5)]],
                        constant int &num_rays [[buffer(6)]],
                        constant int &seed [[buffer(7)]],
-                       device packed_float3 *image [[buffer(8)]],
+                       constant float &exposure [[buffer(8)]],
+                       device packed_float3 *image [[buffer(9)]],
                        uint id [[thread_position_in_grid]]) {
-  SimpleRNG rng = SimpleRNG(seed * 400, id * id);
+  SimpleRNG rng = SimpleRNG(seed, id * id);
 
   for (int ray_num = 0; ray_num < num_rays; ray_num++) {
     Ray ray = get_ray(view, id, rng);
 
     for (int bounce = 0; bounce < num_bounces; bounce++) {
-      Hit closestHit;
-      closestHit.hit = false;
-      closestHit.t = INFINITY;
+      Hit closestHit = no_hit;
+
       for (int sphere_id = 0; sphere_id < num_spheres; sphere_id++) {
-        Sphere sphere = spheres[sphere_id];
-        Hit hit = sphere_hit(ray, sphere);
-        if (hit.hit && hit.t < closestHit.t) {
+        Hit hit = sphere_hit(ray, spheres[sphere_id]);
+        if (hit.t < closestHit.t) {
           closestHit = hit;
         }
       }
+
       for (int triangle_id = 0; triangle_id < num_triangles; triangle_id++) {
-        Triangle triangle = triangles[triangle_id];
-        Hit hit = triangle_hit(ray, triangle);
-        if (hit.hit && hit.t < closestHit.t) {
+        Hit hit = triangle_hit(ray, triangles[triangle_id]);
+        if (hit.t < closestHit.t) {
           closestHit = hit;
         }
       }
-      if (closestHit.hit) {
+
+      if (closestHit.t < INFINITY) {
         ray.origin = ray.origin + closestHit.t * ray.dir;
         bool is_specular =
             check_specular(closestHit.material.reflectivity, rng);
@@ -223,11 +224,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
 
     image[id] += ray.color * ray.intensity;
   }
-  image[id] /= num_rays;
-}
-kernel void tone_map(const device packed_float3 *hdr_image [[buffer(0)]],
-                     constant float &exposure [[buffer(1)]],
-                     device packed_float3 *ldr_image [[buffer(2)]],
-                     uint id [[thread_position_in_grid]]) {
-  ldr_image[id] = ((1 - exp(-hdr_image[id] * exposure)) * 255.0);
+
+  // tone map
+  image[id] = ((1 - exp(-image[id] * exposure / num_rays)) * 255.0);
 }

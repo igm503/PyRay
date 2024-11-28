@@ -30,11 +30,12 @@ class MetalTracer:
         exposure: float,
     ):
         _, np_spheres, np_triangles = inputs_to_numpy(view, spheres, triangles)
-        img = self.trace_rays(view, np_spheres, np_triangles, max_bounces, num_rays)
-        final_img = self.tone_map(img, exposure, (view.width, view.height))
-        return final_img.reshape(view.height, view.width, 3).astype(np.uint8)
+        img = self.trace_rays(
+            view, np_spheres, np_triangles, max_bounces, num_rays, exposure
+        )
+        return img.reshape(view.height, view.width, 3).astype(np.uint8)
 
-    def trace_rays(self, view, spheres, triangles, max_bounces, num_rays):
+    def trace_rays(self, view, spheres, triangles, max_bounces, num_rays, exposure):
         random_seed = np.random.randint(0, 2**16 - 1, dtype=np.int32)
         buffers = [
             self.device.buffer(data)
@@ -47,6 +48,7 @@ class MetalTracer:
                 np.int32(max_bounces),
                 np.int32(num_rays),
                 random_seed,
+                np.float32(exposure),
             ]
         ]
         image_buffer = self.device.buffer(
@@ -55,22 +57,6 @@ class MetalTracer:
         buffers.append(image_buffer)
         num_threads = view.width * view.height
         self.run_kernel("trace_rays", num_threads, buffers)
-        return image_buffer
-        # return np.frombuffer(image_buffer, dtype=np.float32)
-
-    def tone_map(self, hdr_image, exposure, resolution):
-        buffers = [hdr_image, self.device.buffer(np.array([exposure], dtype=np.float32))]
-        # buffers = [
-        #     self.device.buffer(data)
-        #     for data in [
-        #         hdr_image,
-        #         np.array([exposure], dtype=np.float32),
-        #     ]
-        # ]
-        width, height = resolution
-        image_buffer = self.device.buffer(width * height * 3 * np.dtype(np.float32).itemsize)
-        buffers.append(image_buffer)
-        self.run_kernel("tone_map", width * height, buffers)
         return np.frombuffer(image_buffer, dtype=np.float32)
 
     def run_kernel(self, name, call_count, buffers):
