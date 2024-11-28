@@ -1,3 +1,3 @@
-from .metal_types import MetalTypes
+from .gpu_types import GPUTypes, inputs_to_numpy
 
-__all__ = ["MetalTypes"]
+__all__ = ["GPUTypes", "inputs_to_numpy"]

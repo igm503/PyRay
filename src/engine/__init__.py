@@ -1,4 +1,4 @@
 from .cpu import CPUTracer
-from .metal import MetalTracer, MetalTypes
+from .metal import MetalTracer
 
-__all__ = ["CPUTracer", "MetalTracer", "MetalTypes"]
+__all__ = ["CPUTracer", "MetalTracer"]

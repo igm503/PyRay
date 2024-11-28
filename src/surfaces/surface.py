@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..types import MetalTypes
+from ..types import GPUTypes
 
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ class Material:
     def to_numpy(self):
         return np.array(
             (self.color, self.luminance, self.reflectivity),
-            dtype=MetalTypes.material_dtype,
+            dtype=GPUTypes.material_dtype,
         )
 
 

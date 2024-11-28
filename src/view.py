@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from .types import MetalTypes
+from .types import GPUTypes
 from .utils import normalize
 
 
@@ -32,7 +32,7 @@ class View:
         top_left_dir = self.dir - (self.width / 2) * right_dir - (self.height / 2) * down_dir
         return np.array(
             (self.origin, top_left_dir, right_dir, down_dir, self.width, self.height),
-            dtype=MetalTypes.view_dtype,
+            dtype=GPUTypes.view_dtype,
         )
 
     def forward(self):

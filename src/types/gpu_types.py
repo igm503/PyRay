@@ -1,16 +1,13 @@
+from typing import TYPE_CHECKING
+
 import numpy as np
 
-class MetalTypes:
-    ray_dtype = np.dtype(
-        [
-            ("origin", np.float32, 3),
-            ("direction", np.float32, 3),
-            ("pixel", np.int32, 2),
-            ("color", np.float32, 3),
-            ("intensity", np.float32),
-        ]
-    )
+if TYPE_CHECKING:
+    from view import View
+    from ..surfaces import Sphere, Triangle
 
+
+class GPUTypes:
     view_dtype = np.dtype(
         [
             ("origin", np.float32, 3),
@@ -46,3 +43,14 @@ class MetalTypes:
             ("material", material_dtype),
         ]
     )
+
+
+def inputs_to_numpy(view: "View", spheres: list["Sphere"], triangles: list["Triangle"]):
+    numpy_view = view.to_numpy()
+    numpy_spheres = np.zeros(max(len(spheres), 1), dtype=GPUTypes.sphere_dtype)
+    for i, sphere in enumerate(spheres):
+        numpy_spheres[i] = sphere.to_numpy()
+    numpy_triangles = np.zeros(max(len(triangles), 1), dtype=GPUTypes.triangle_dtype)
+    for i, triangle in enumerate(triangles):
+        numpy_triangles[i] = triangle.to_numpy()
+    return numpy_view, numpy_spheres, numpy_triangles

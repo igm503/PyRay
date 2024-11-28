@@ -5,7 +5,7 @@ from .surface import Surface, Material
 from ..ray import Ray, Hit
 from ..utils import normalize
 from ..constants import NUMBA
-from ..types import MetalTypes
+from ..types import GPUTypes
 
 
 class Triangle(Surface):
@@ -21,7 +21,7 @@ class Triangle(Surface):
     def to_numpy(self):
         return np.array(
             (self.points[0], self.points[1], self.points[2], self.material.to_numpy()),
-            dtype=MetalTypes.triangle_dtype,
+            dtype=GPUTypes.triangle_dtype,
         )
 
     def check_hit(self, ray: Ray):
