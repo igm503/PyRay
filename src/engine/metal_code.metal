@@ -13,23 +13,18 @@ private:
   thread uint state;
 
 public:
-  thread SimpleRNG(const unsigned seed1, const unsigned seed2 = 1);
-  thread float rand();
-  thread float rand_normal();
+  thread SimpleRNG(const unsigned seed1, const unsigned seed2 = 1){
+    this->state = seed1 * 1103515245 + seed2 * 4928004 / seed1;
+  }
+  thread float rand(){
+    this->state = (this->state + 51) * 1103515245 + 12345;
+    return float(this->state & 0x7FFFFFFF) / float(0x7FFFFFFF);
+  }
+  thread float rand_normal(){
+    // mean is 0; standard deviation is 1
+    return sqrt(-2.0 * log(this->rand())) * sin(2.0 * M_PI_F * this->rand());
+  }
 };
-
-thread SimpleRNG::SimpleRNG(const uint seed1, const uint seed2) {
-  this->state = seed1 * 1103515245 + seed2 * 4928004 / seed1;
-}
-
-thread float SimpleRNG::rand() {
-  this->state = (this->state + 51) * 1103515245 + 12345;
-  return float(this->state & 0x7FFFFFFF) / float(0x7FFFFFFF);
-}
-thread float SimpleRNG::rand_normal() {
-  // mean is 0; standard deviation is 1
-  return sqrt(-2.0 * log(this->rand())) * sin(2.0 * M_PI_F * this->rand());
-}
 
 struct Ray {
   packed_float3 origin;
@@ -127,7 +122,7 @@ Hit sphere_hit(Ray ray, Sphere sphere) {
   packed_float3 ray_offset_origin = ray.origin - sphere.center;
   float b = 2 * dot(ray.dir, ray_offset_origin);
   float c =
-      dot(ray_offset_origin, ray_offset_origin) - pow(sphere.radius, 2);
+      length_squared(ray_offset_origin) - sphere.radius * sphere.radius;
   float discriminant = b * b - 4 * c;
   if (discriminant > 0) {
     float t = (-b - sqrt(discriminant)) / 2.0f;
