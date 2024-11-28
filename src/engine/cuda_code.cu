@@ -222,7 +222,7 @@ __global__ void trace_rays(View *view, Sphere *spheres, Triangle *triangles,
       for (int i = 0; i < num_spheres; i++) {
         Sphere sphere = spheres[i];
         Hit hit = sphere_hit(ray, sphere);
-        if (hit.hit && hit.t < closest_hit.t) {
+        if (hit.t < closest_hit.t) {
           closest_hit = hit;
         }
       }
@@ -230,12 +230,12 @@ __global__ void trace_rays(View *view, Sphere *spheres, Triangle *triangles,
       for (int i = 0; i < num_triangles; i++) {
         Triangle triangle = triangles[i];
         Hit hit = triangle_hit(ray, triangle);
-        if (hit.hit && hit.t < closest_hit.t) {
+        if (hit.t < closest_hit.t) {
           closest_hit = hit;
         }
       }
 
-      if (closest_hit.hit) {
+      if (closest_hit.t < INFINITY) {
         ray.origin = ray.origin + ray.dir * closest_hit.t;
         if (check_specular(closest_hit.material.reflectivity, local_state)) {
           ray.dir = reflect_dir(ray.dir, closest_hit.normal);
