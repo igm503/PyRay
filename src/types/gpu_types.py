@@ -37,9 +37,9 @@ class GPUTypes:
 
     triangle_dtype = np.dtype(
         [
+            ("v0", np.float32, 3),
             ("v1", np.float32, 3),
             ("v2", np.float32, 3),
-            ("v3", np.float32, 3),
             ("material", material_dtype),
         ]
     )

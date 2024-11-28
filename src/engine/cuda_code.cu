@@ -1,11 +1,12 @@
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
+#include <math_constants.h>
 
 #define EPSILON 1e-6f
 
-__constant__ float3 SUN_COLOR = make_float3(1.0f, 0.68f, 0.26f);
-__constant__ float3 WHITE = make_float3(1.0f, 1.0f, 1.0f);
-__constant__ float3 SKY_COLOR = make_float3(0.53f, 0.81f, 0.92f);
+__constant__ float3 SUN_COLOR = {1.0f, 0.68f, 0.26f};
+__constant__ float3 WHITE = {1.0f, 1.0f, 1.0f};
+__constant__ float3 SKY_COLOR = {0.53f, 0.81f, 0.92f};
 
 struct Ray {
   float3 origin;
@@ -116,6 +117,8 @@ __device__ Ray add_environment(Ray ray) {
     color = SKY_COLOR;
     ray.intensity += 0.5f;
   }
+      color = SKY_COLOR;
+    ray.intensity += 0.5f;
   ray.color = ray.color * color;
   return ray;
 }
@@ -196,79 +199,80 @@ __device__ Ray get_ray(const View view, int x, int y, curandState *state) {
   return ray;
 }
 
-__global__ void init_rand_state(curandState *states, int seed) {
-  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  curand_init(seed, idx, 0, &states[idx]);
-}
+extern "C" {
 
-__global__ void trace_rays(View view, Sphere *spheres, Triangle *triangles,
-                           int num_spheres, int num_triangles, int num_bounces,
-                           int num_rays, curandState *rand_states,
-                           float3 *image) {
-  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx >= view.width * view.height)
-    return;
-
-  int x = idx % view.width;
-  int y = idx / view.width;
-  curandState *local_state = &rand_states[idx];
-
-  float3 pixel_color = make_float3(0.0f, 0.0f, 0.0f);
-
-  for (int ray_num = 0; ray_num < num_rays; ray_num++) {
-    Ray ray = get_ray(view, x, y, local_state);
-
-    for (int bounce = 0; bounce < num_bounces; bounce++) {
-      Hit closest_hit = {false,
-                         INFINITY,
-                         make_float3(0, 0, 0),
-                         {make_float3(0, 0, 0), 0.0f, 0.0f}};
-
-      for (int i = 0; i < num_spheres; i++) {
-        Hit hit = sphere_hit(ray, spheres[i]);
-        if (hit.hit && hit.t < closest_hit.t) {
-          closest_hit = hit;
-        }
-      }
-
-      for (int i = 0; i < num_triangles; i++) {
-        Hit hit = triangle_hit(ray, triangles[i]);
-        if (hit.hit && hit.t < closest_hit.t) {
-          closest_hit = hit;
-        }
-      }
-
-      if (closest_hit.hit) {
-        ray.origin = ray.origin + ray.dir * closest_hit.t;
-        if (check_specular(closest_hit.material.reflectivity, local_state)) {
-          ray.dir = reflect_dir(ray.dir, closest_hit.normal);
-        } else {
-          ray.color = ray.color * closest_hit.material.color;
-          ray.intensity += closest_hit.material.intensity;
-          ray.dir = diffuse_dir(closest_hit.normal, local_state);
-        }
-      } else {
-        ray = add_environment(ray);
-        break;
-      }
-    }
-
-    pixel_color = pixel_color + ray.color * ray.intensity;
+  __global__ void init_rand_state(curandState *states, int seed, int size) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx > size)
+      return;
+    curand_init(seed, idx, 0, &states[idx]);
   }
 
-  image[idx] = pixel_color / static_cast<float>(num_rays);
-}
 
-__global__ void tone_map(float3 *hdr_image, float exposure, float3 *ldr_image,
-                         int size) {
-  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx >= size)
-    return;
+  __global__ void trace_rays(View *view, Sphere *spheres, Triangle *triangles,
+                             int num_spheres, int num_triangles,
+                             int num_bounces, int num_rays,
+                             float exposure,
+                             curandState *rand_states, float3 *image) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= view->width * view->height)
+      return;
 
-  float3 hdr = hdr_image[idx];
-  float3 ldr;
-  ldr.x = (1.0f - expf(-hdr.x * exposure)) * 255.0f;
-  ldr.y = (1.0f - expf(-hdr.y * exposure)) * 255.0f;
-  ldr.z = (1.0f - expf(-hdr.z * exposure)) * 255.0f;
-  ldr_image[idx] = ldr;
+    int x = idx % view->width;
+    int y = idx / view->width;
+    curandState *local_state = &rand_states[idx];
+
+    float3 pixel_color = make_float3(0.0f, 0.0f, 0.0f);
+
+    for (int ray_num = 0; ray_num < num_rays; ray_num++) {
+      Ray ray = get_ray(*view, x, y, local_state);
+
+      for (int bounce = 0; bounce < num_bounces; bounce++) {
+        Hit closest_hit = {false,
+                           INFINITY,
+                           make_float3(0, 0, 0),
+                           {make_float3(0, 0, 0), 0.0f, 0.0f}};
+
+        for (int i = 0; i < num_spheres; i++) {
+          Sphere sphere = spheres[i];
+          Hit hit = sphere_hit(ray, sphere);
+          if (hit.hit && hit.t < closest_hit.t) {
+            closest_hit = hit;
+          }
+        }
+
+        for (int i = 0; i < num_triangles; i++) {
+          Triangle triangle = triangles[i];
+          Hit hit = triangle_hit(ray, triangle);
+          if (hit.hit && hit.t < closest_hit.t) {
+            closest_hit = hit;
+          }
+        }
+
+        if (closest_hit.hit) {
+          ray.origin = ray.origin + ray.dir * closest_hit.t;
+          if (check_specular(closest_hit.material.reflectivity, local_state)) {
+            ray.dir = reflect_dir(ray.dir, closest_hit.normal);
+          } else {
+            ray.color = ray.color * closest_hit.material.color;
+            ray.intensity += closest_hit.material.intensity;
+            ray.dir = diffuse_dir(closest_hit.normal, local_state);
+          }
+        } else {
+          ray = add_environment(ray);
+          break;
+        }
+      }
+      pixel_color = pixel_color + ray.color * ray.intensity;
+    }
+    
+    pixel_color = pixel_color / static_cast<float>(num_rays);
+    
+    float3 ldr;
+    ldr.x = (1.0f - expf(-pixel_color.x * exposure)) * 255.0f;
+    ldr.y = (1.0f - expf(-pixel_color.y * exposure)) * 255.0f;
+    ldr.z = (1.0f - expf(-pixel_color.z * exposure)) * 255.0f;
+
+    image[idx] = ldr;
+  }
 }
