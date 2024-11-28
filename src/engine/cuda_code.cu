@@ -118,8 +118,6 @@ __device__ Ray add_environment(Ray ray) {
     color = SKY_COLOR;
     ray.intensity += 0.5f;
   }
-  color = SKY_COLOR;
-  ray.intensity += 0.5f;
   ray.color = ray.color * color;
   return ray;
 }
