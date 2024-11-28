@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
+from pathlib import Path
 
 import metalcompute as mc
 import numpy as np
 
-from .metal_code import metal_code
 from ..types import MetalTypes
 
 if TYPE_CHECKING:
@@ -13,6 +13,10 @@ if TYPE_CHECKING:
 class MetalTracer:
     def __init__(self):
         self.device = mc.Device()
+
+        metal_code_path = Path(__file__).parent / "metal_code.metal"
+        with open(metal_code_path, "r") as f:
+            metal_code = f.read()
         self.metal_library = self.device.kernel(metal_code)
 
     def render(
