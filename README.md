@@ -56,7 +56,7 @@ Press `R` to render the scene at high quality using the settings specified in th
 
 # Configuring the Scene
 You can create a custom scene by creating a yaml file in ```scenes/``` and configuring it as follows
-```
+```yaml
 
 view:                                # parameters for virtual camera
 
