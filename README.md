@@ -24,7 +24,7 @@ cd PyRay && pip install -r requirements.txt
 ```
 3. Run the example scene
 ```
-cd PyRay && python main.py default.yaml
+cd PyRay && python demo.py default.yaml
 ```
 
 # Interacting with the Scene
@@ -110,12 +110,17 @@ surfaces:                            # list of objects in scene
 ```
 Render your scene with
 ```
-python main.py scene_name.yaml
+python demo.py scene_name.yaml
 ```
 By default, the renderer will use your cpu. If you have a GPU with metal support, you can use it for faster rendering like so:
 ```
-python main.py scene_name.yaml --device metal
+python demo.py scene_name.yaml --device metal
 ```
+If you have an Nvidia GPU, you can use it for faster rendering like so:
+```
+python demo.py scene_name.yaml --device cuda
+```
+
 
 # TODO
 - CUDA Acceleration [completed for metal devices; todo: cuda]

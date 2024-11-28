@@ -13,8 +13,27 @@ class Scene:
     def __init__(self, surfaces: list[Surface]):
         self.triangles = [surface for surface in surfaces if isinstance(surface, Triangle)]
         self.spheres = [surface for surface in surfaces if isinstance(surface, Sphere)]
-        self.surfaces = surfaces
-        self.tracer = MetalTracer()
+
+    def render(
+        self,
+        view: View,
+        num_rays: int,
+        max_bounces: int,
+        exposure: float = 3.0,
+        device: str = "metal",
+    ):
+        if device == "cpu":
+            if not hasattr(self, "cpu_render"):
+                self.cpu = CPUTracer()
+            renderer = self.cpu
+        elif device == "metal":
+            if not hasattr(self, "metal"):
+                self.metal = MetalTracer()
+            renderer = self.metal
+        else:
+            raise ValueError(f"Unknown device {device}")
+        img = renderer.render(view, self.spheres, self.triangles, num_rays, max_bounces, exposure)
+        return cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
     def cumulative_render(
         self,
@@ -47,24 +66,3 @@ class Scene:
             cv2.waitKey(1)
         print(f"Renders are saved to {save_dir}")
         return current_img
-
-    def render(
-        self,
-        view: View,
-        num_rays: int,
-        max_bounces: int,
-        exposure: float = 3.0,
-        device: str = "metal",
-    ):
-        if device == "cpu":
-            if not hasattr(self, "cpu_render"):
-                self.cpu = CPUTracer()
-            renderer = self.cpu
-        elif device == "metal":
-            if not hasattr(self, "metal"):
-                self.metal = MetalTracer()
-            renderer = self.metal
-        else:
-            raise ValueError(f"Unknown device {device}")
-        img = renderer.render(view, self.spheres, self.triangles, num_rays, max_bounces, exposure)
-        return cv2.cvtColor(img, cv2.COLOR_RGB2BGR)

@@ -1,8 +1,8 @@
 view:
   origin: [-30, -14.0, 5.0]
   dir: [0.1, 0.1, 0]
-  width: 1920
-  height: 1080
+  width: 1700
+  height: 1100
   fov: 70
   exposure: 3.0
   num_samples: 10
@@ -10,8 +10,8 @@ view:
 
 save_render:
   save_path: renders/default
-  width: 3840
-  height: 2160
+  width: 3400
+  height: 2200
   exposure: 3.0
   num_samples: 1000
   max_bounces: 100

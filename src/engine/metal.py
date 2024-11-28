@@ -39,41 +39,28 @@ class MetalTracer:
         max_bounces: int,
         exposure: float,
     ):
-        _, np_spheres, np_triangles = inputs_to_numpy(view, spheres, triangles)
-        img = self.trace_rays(view, np_spheres, np_triangles, max_bounces, num_rays, exposure)
-        return img.reshape(view.height, view.width, 3).astype(np.uint8)
+        np_view, np_spheres, np_triangles = inputs_to_numpy(view, spheres, triangles)
 
-    def trace_rays(self, view, spheres, triangles, max_bounces, num_rays, exposure):
-        random_seed = np.random.randint(0, 2**16 - 1, dtype=np.int32)
+        seed = np.random.randint(0, 2**16 - 1, dtype=np.int32)
 
         input_data = [
-            view.to_numpy(),
-            spheres,
-            triangles,
+            np_view,
+            np_spheres,
+            np_triangles,
             np.int32(len(spheres)),
             np.int32(len(triangles)),
             np.int32(max_bounces),
             np.int32(num_rays),
-            random_seed,
+            seed,
             np.float32(exposure),
         ]
 
         buffers = []
         for data in input_data:
-            buffer_size = data.nbytes
-            metal_buffer = self.device.newBufferWithLength_options_(
-                buffer_size, Metal.MTLResourceStorageModeShared
-            )
-            buffer_array = (ctypes.c_byte * buffer_size).from_buffer(
-                metal_buffer.contents().as_buffer(buffer_size)
-            )
-            buffer_array[:] = data.tobytes()
-            buffers.append(metal_buffer)
+            buffers.append(self.get_and_load_buffer(data))
 
         image_size = view.width * view.height * 3 * np.dtype(np.float32).itemsize
-        image_buffer = self.device.newBufferWithLength_options_(
-            image_size, Metal.MTLResourceStorageModeShared
-        )
+        image_buffer = self.get_buffer(image_size)
         buffers.append(image_buffer)
 
         self.run_kernel(view.width * view.height, buffers)
@@ -81,7 +68,20 @@ class MetalTracer:
         output_array = (ctypes.c_float * (view.width * view.height * 3)).from_buffer(
             image_buffer.contents().as_buffer(image_size)
         )
-        return np.frombuffer(output_array, dtype=np.float32)
+        img = np.frombuffer(output_array, dtype=np.float32)
+        return img.reshape(view.height, view.width, 3).astype(np.uint8)
+
+    def get_and_load_buffer(self, data):
+        buffer_size = data.nbytes
+        metal_buffer = self.get_buffer(buffer_size)
+        buffer_array = (ctypes.c_byte * buffer_size).from_buffer(
+            metal_buffer.contents().as_buffer(buffer_size)
+        )
+        buffer_array[:] = data.tobytes()
+        return metal_buffer
+
+    def get_buffer(self, size):
+        return self.device.newBufferWithLength_options_(size, Metal.MTLResourceStorageModeShared)
 
     def run_kernel(self, num_threads, buffers):
         command_buffer = self.command_queue.commandBuffer()
@@ -91,12 +91,11 @@ class MetalTracer:
         for idx, buffer in enumerate(buffers):
             compute_encoder.setBuffer_offset_atIndex_(buffer, 0, idx)
 
-        threads_per_threadgroup = min(self.pipeline_state.maxTotalThreadsPerThreadgroup(), 1000000)
-
+        max_threads = self.pipeline_state.maxTotalThreadsPerThreadgroup()
+        threads_per_threadgroup = Metal.MTLSizeMake(max_threads, 1, 1)
         threads = Metal.MTLSizeMake(num_threads, 1, 1)
-        threadgroups = Metal.MTLSizeMake(threads_per_threadgroup, 1, 1)
 
-        compute_encoder.dispatchThreads_threadsPerThreadgroup_(threads, threadgroups)
+        compute_encoder.dispatchThreads_threadsPerThreadgroup_(threads, threads_per_threadgroup)
         compute_encoder.endEncoding()
 
         command_buffer.commit()

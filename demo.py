@@ -8,7 +8,7 @@ import numpy as np
 from src import parse_yaml
 
 parser = argparse.ArgumentParser()
-# no keyword
+
 parser.add_argument("scene", type=str, help="name of scene file (must be in scenes directory)")
 parser.add_argument(
     "--device",
