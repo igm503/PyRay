@@ -135,10 +135,9 @@ __device__ Hit sphere_hit(Ray ray, Sphere sphere) {
     float t = (-b - sqrtf(discriminant)) / 2.0f;
     if (t > 0) {
       return Hit{
-        t, 
-        normalize(ray.origin + ray.dir * t - sphere.center) / sphere.radius), 
-        sphere.material
-      };
+          t,
+          normalize((ray.origin + ray.dir * t - sphere.center) / sphere.radius),
+          sphere.material};
     }
   }
   return NO_HIT;
@@ -177,9 +176,11 @@ __device__ Hit triangle_hit(Ray ray, Triangle triangle) {
   return Hit{t, normalize(cross(ab, ac)), triangle.material};
 }
 
-__device__ Ray get_ray(const View view, int x, int y, curandState *state) {
-  float x_offset = static_cast<float>(x) + curand_uniform(state) - 0.5f;
-  float y_offset = static_cast<float>(y) + curand_uniform(state) - 0.5f;
+__device__ Ray get_ray(const View view, int idx, curandState *state) {
+  float x_offset =
+      static_cast<float>(idx % view.width) + curand_uniform(state) - 0.5f;
+  float y_offset =
+      static_cast<float>(idx / view.width) + curand_uniform(state) - 0.5f;
 
   Ray ray;
   ray.origin = view.origin;
@@ -207,14 +208,12 @@ __global__ void trace_rays(View *view, Sphere *spheres, Triangle *triangles,
   if (idx >= view->width * view->height)
     return;
 
-  int x = idx % view->width;
-  int y = idx / view->width;
   curandState *local_state = &rand_states[idx];
 
   float3 pixel_color = make_float3(0.0f, 0.0f, 0.0f);
 
   for (int ray_num = 0; ray_num < num_rays; ray_num++) {
-    Ray ray = get_ray(*view, x, y, local_state);
+    Ray ray = get_ray(*view, idx, local_state);
 
     for (int bounce = 0; bounce < num_bounces; bounce++) {
       Hit closest_hit = NO_HIT;
