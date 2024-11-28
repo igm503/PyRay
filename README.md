@@ -21,10 +21,16 @@ git clone https://github.com/igm503/PyRay.git
 2. Install the required libraries
 ```
 cd PyRay && pip install -r requirements.txt
+
+# if you have a metal gpu
+pip install pyobjc
+
+# if you have an nvidia gpu, install the appropriate cupy library for your system. e.g.
+pip install cupy-cuda11x
 ```
 3. Run the example scene
 ```
-cd PyRay && python demo.py default.yaml
+cd PyRay && python demo.py default.yaml --device [cpu|metal|cuda]
 ```
 
 # Interacting with the Scene
