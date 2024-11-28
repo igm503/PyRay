@@ -44,11 +44,12 @@ struct Triangle {
 };
 
 struct Hit {
-  bool hit;
   float t;
   float3 normal;
   Material material;
 };
+
+__constant__ Hit NO_HIT = {INFINITY, {0, 0, 0}, {{0, 0, 0}, 0.0f, 0.0f}};
 
 __device__ float3 operator+(const float3 &a, const float3 &b) {
   return make_float3(a.x + b.x, a.y + b.y, a.z + b.z);
@@ -117,16 +118,13 @@ __device__ Ray add_environment(Ray ray) {
     color = SKY_COLOR;
     ray.intensity += 0.5f;
   }
-      color = SKY_COLOR;
-    ray.intensity += 0.5f;
+  color = SKY_COLOR;
+  ray.intensity += 0.5f;
   ray.color = ray.color * color;
   return ray;
 }
 
 __device__ Hit sphere_hit(Ray ray, Sphere sphere) {
-  Hit result = {
-      false, 0.0f, make_float3(0, 0, 0), {make_float3(0, 0, 0), 0.0f, 0.0f}};
-
   float3 ray_offset_origin = ray.origin - sphere.center;
   float b = 2.0f * dot(ray.dir, ray_offset_origin);
   float c =
@@ -136,27 +134,24 @@ __device__ Hit sphere_hit(Ray ray, Sphere sphere) {
   if (discriminant > 0) {
     float t = (-b - sqrtf(discriminant)) / 2.0f;
     if (t > 0) {
-      result.hit = true;
-      result.t = t;
-      result.normal =
-          normalize((ray.origin + ray.dir * t - sphere.center) / sphere.radius);
-      result.material = sphere.material;
+      return Hit{
+        t, 
+        normalize(ray.origin + ray.dir * t - sphere.center) / sphere.radius), 
+        sphere.material
+      };
     }
   }
-  return result;
+  return NO_HIT;
 }
 
 __device__ Hit triangle_hit(Ray ray, Triangle triangle) {
-  Hit result = {
-      false, 0.0f, make_float3(0, 0, 0), {make_float3(0, 0, 0), 0.0f, 0.0f}};
-
   float3 ab = triangle.v1 - triangle.v0;
   float3 ac = triangle.v2 - triangle.v0;
   float3 pvec = cross(ray.dir, ac);
   float det = dot(ab, pvec);
 
   if (det < EPSILON) {
-    return result;
+    return NO_HIT;
   }
 
   float inv_det = 1.0f / (det + EPSILON);
@@ -164,26 +159,22 @@ __device__ Hit triangle_hit(Ray ray, Triangle triangle) {
   float u = dot(tvec, pvec) * inv_det;
 
   if (u < 0.0f || u > 1.0f) {
-    return result;
+    return NO_HIT;
   }
 
   float3 qvec = cross(tvec, ab);
   float v = dot(ray.dir, qvec) * inv_det;
 
   if (v < 0.0f || u + v > 1.0f) {
-    return result;
+    return NO_HIT;
   }
 
   float t = dot(ac, qvec) * inv_det;
   if (t < 10.0f * EPSILON) {
-    return result;
+    return NO_HIT;
   }
 
-  result.hit = true;
-  result.t = t;
-  result.normal = normalize(cross(ab, ac));
-  result.material = triangle.material;
-  return result;
+  return Hit{t, normalize(cross(ab, ac)), triangle.material};
 }
 
 __device__ Ray get_ray(const View view, int x, int y, curandState *state) {
@@ -201,78 +192,73 @@ __device__ Ray get_ray(const View view, int x, int y, curandState *state) {
 
 extern "C" {
 
-  __global__ void init_rand_state(curandState *states, int seed, int size) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx > size)
-      return;
-    curand_init(seed, idx, 0, &states[idx]);
-  }
+__global__ void init_rand_state(curandState *states, int seed, int size) {
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx > size)
+    return;
+  curand_init(seed, idx, 0, &states[idx]);
+}
 
+__global__ void trace_rays(View *view, Sphere *spheres, Triangle *triangles,
+                           int num_spheres, int num_triangles, int num_bounces,
+                           int num_rays, float exposure,
+                           curandState *rand_states, float3 *image) {
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx >= view->width * view->height)
+    return;
 
-  __global__ void trace_rays(View *view, Sphere *spheres, Triangle *triangles,
-                             int num_spheres, int num_triangles,
-                             int num_bounces, int num_rays,
-                             float exposure,
-                             curandState *rand_states, float3 *image) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= view->width * view->height)
-      return;
+  int x = idx % view->width;
+  int y = idx / view->width;
+  curandState *local_state = &rand_states[idx];
 
-    int x = idx % view->width;
-    int y = idx / view->width;
-    curandState *local_state = &rand_states[idx];
+  float3 pixel_color = make_float3(0.0f, 0.0f, 0.0f);
 
-    float3 pixel_color = make_float3(0.0f, 0.0f, 0.0f);
+  for (int ray_num = 0; ray_num < num_rays; ray_num++) {
+    Ray ray = get_ray(*view, x, y, local_state);
 
-    for (int ray_num = 0; ray_num < num_rays; ray_num++) {
-      Ray ray = get_ray(*view, x, y, local_state);
+    for (int bounce = 0; bounce < num_bounces; bounce++) {
+      Hit closest_hit = NO_HIT;
 
-      for (int bounce = 0; bounce < num_bounces; bounce++) {
-        Hit closest_hit = {false,
-                           INFINITY,
-                           make_float3(0, 0, 0),
-                           {make_float3(0, 0, 0), 0.0f, 0.0f}};
-
-        for (int i = 0; i < num_spheres; i++) {
-          Sphere sphere = spheres[i];
-          Hit hit = sphere_hit(ray, sphere);
-          if (hit.hit && hit.t < closest_hit.t) {
-            closest_hit = hit;
-          }
-        }
-
-        for (int i = 0; i < num_triangles; i++) {
-          Triangle triangle = triangles[i];
-          Hit hit = triangle_hit(ray, triangle);
-          if (hit.hit && hit.t < closest_hit.t) {
-            closest_hit = hit;
-          }
-        }
-
-        if (closest_hit.hit) {
-          ray.origin = ray.origin + ray.dir * closest_hit.t;
-          if (check_specular(closest_hit.material.reflectivity, local_state)) {
-            ray.dir = reflect_dir(ray.dir, closest_hit.normal);
-          } else {
-            ray.color = ray.color * closest_hit.material.color;
-            ray.intensity += closest_hit.material.intensity;
-            ray.dir = diffuse_dir(closest_hit.normal, local_state);
-          }
-        } else {
-          ray = add_environment(ray);
-          break;
+      for (int i = 0; i < num_spheres; i++) {
+        Sphere sphere = spheres[i];
+        Hit hit = sphere_hit(ray, sphere);
+        if (hit.hit && hit.t < closest_hit.t) {
+          closest_hit = hit;
         }
       }
-      pixel_color = pixel_color + ray.color * ray.intensity;
-    }
-    
-    pixel_color = pixel_color / static_cast<float>(num_rays);
-    
-    float3 ldr;
-    ldr.x = (1.0f - expf(-pixel_color.x * exposure)) * 255.0f;
-    ldr.y = (1.0f - expf(-pixel_color.y * exposure)) * 255.0f;
-    ldr.z = (1.0f - expf(-pixel_color.z * exposure)) * 255.0f;
 
-    image[idx] = ldr;
+      for (int i = 0; i < num_triangles; i++) {
+        Triangle triangle = triangles[i];
+        Hit hit = triangle_hit(ray, triangle);
+        if (hit.hit && hit.t < closest_hit.t) {
+          closest_hit = hit;
+        }
+      }
+
+      if (closest_hit.hit) {
+        ray.origin = ray.origin + ray.dir * closest_hit.t;
+        if (check_specular(closest_hit.material.reflectivity, local_state)) {
+          ray.dir = reflect_dir(ray.dir, closest_hit.normal);
+        } else {
+          ray.color = ray.color * closest_hit.material.color;
+          ray.intensity += closest_hit.material.intensity;
+          ray.dir = diffuse_dir(closest_hit.normal, local_state);
+        }
+      } else {
+        ray = add_environment(ray);
+        break;
+      }
+    }
+    pixel_color = pixel_color + ray.color * ray.intensity;
   }
+
+  pixel_color = pixel_color / static_cast<float>(num_rays);
+
+  float3 ldr;
+  ldr.x = (1.0f - expf(-pixel_color.x * exposure)) * 255.0f;
+  ldr.y = (1.0f - expf(-pixel_color.y * exposure)) * 255.0f;
+  ldr.z = (1.0f - expf(-pixel_color.z * exposure)) * 255.0f;
+
+  image[idx] = ldr;
+}
 }

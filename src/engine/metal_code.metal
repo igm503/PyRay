@@ -67,7 +67,7 @@ struct Hit {
   Material material;
 };
 
-constant Hit no_hit =
+constant Hit NO_HIT =
     Hit{INFINITY, packed_float3(0.0f, 0.0f, 0.0f),
         Material{packed_float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f}};
 
@@ -133,7 +133,7 @@ Hit sphere_hit(Ray ray, Sphere sphere) {
           sphere.material};
     }
   }
-  return no_hit;
+  return NO_HIT;
 }
 
 Hit triangle_hit(Ray ray, Triangle triangle) {
@@ -143,25 +143,25 @@ Hit triangle_hit(Ray ray, Triangle triangle) {
   float det = dot(ab, pvec);
 
   if (det < epsilon) {
-    return no_hit;
+    return NO_HIT;
   }
 
   float inv_det = 1.0 / (det + epsilon);
   float3 tvec = ray.origin - triangle.v0;
   float u = dot(tvec, pvec) * inv_det;
   if (u < 0.0 || u > 1.0) {
-    return no_hit;
+    return NO_HIT;
   }
 
   float3 qvec = cross(tvec, ab);
   float v = dot(ray.dir, qvec) * inv_det;
   if (v < 0.0 || u + v > 1.0) {
-    return no_hit;
+    return NO_HIT;
   }
 
   float t = dot(ac, qvec) * inv_det;
   if (t < 10 * epsilon) {
-    return no_hit;
+    return NO_HIT;
   }
 
   return Hit{t, normalize(cross(ab, ac)), triangle.material};
@@ -184,7 +184,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
     Ray ray = get_ray(view, id, rng);
 
     for (int bounce = 0; bounce < num_bounces; bounce++) {
-      Hit closestHit = no_hit;
+      Hit closestHit = NO_HIT;
 
       for (int sphere_id = 0; sphere_id < num_spheres; sphere_id++) {
         Hit hit = sphere_hit(ray, spheres[sphere_id]);
