@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from .surfaces import Surface, Triangle, Sphere
 from .view import View
-from .engine import MetalTracer, CPUTracer
+from .engine import get_engine
 
 
 class Scene:
@@ -20,19 +20,12 @@ class Scene:
         num_rays: int,
         max_bounces: int,
         exposure: float = 3.0,
-        device: str = "metal",
+        device: str = "cpu",
     ):
-        if device == "cpu":
-            if not hasattr(self, "cpu_render"):
-                self.cpu = CPUTracer()
-            renderer = self.cpu
-        elif device == "metal":
-            if not hasattr(self, "metal"):
-                self.metal = MetalTracer()
-            renderer = self.metal
-        else:
-            raise ValueError(f"Unknown device {device}")
-        img = renderer.render(view, self.spheres, self.triangles, num_rays, max_bounces, exposure)
+        if not hasattr(self, device):
+            setattr(self, device, get_engine(device))
+        engine = getattr(self, device)
+        img = engine.render(view, self.spheres, self.triangles, num_rays, max_bounces, exposure)
         return cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
     def cumulative_render(
@@ -41,7 +34,7 @@ class Scene:
         num_rays: int,
         max_bounces: int,
         exposure: float = 3.0,
-        device: str = "metal",
+        device: str = "cpu",
         save_dir: str | None = None,
     ):
         if save_dir is not None:

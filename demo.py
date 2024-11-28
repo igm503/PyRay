@@ -14,7 +14,7 @@ parser.add_argument(
     "--device",
     type=str,
     default="cpu",
-    choices=["cpu", "metal"],
+    choices=["cpu", "metal", "cuda"],
     help="Device to use for rendering",
 )
 args = parser.parse_args()

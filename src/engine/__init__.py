@@ -1,4 +1,15 @@
-from .cpu import CPUTracer
-from .metal import MetalTracer
+def get_engine(device: str):
+    if device == "cpu":
+        from .cpu import CPUTracer
 
-__all__ = ["CPUTracer", "MetalTracer"]
+        return CPUTracer()
+    elif device == "metal":
+        from .metal import MetalTracer
+
+        return MetalTracer()
+    elif device == "cuda":
+        from .cuda import CudaTracer
+
+        return CudaTracer()
+    else:
+        raise ValueError(f"Unknown device {device}")

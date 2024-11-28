@@ -3,12 +3,10 @@
 
 #define EPSILON 1e-6f
 
-// Constants
 __constant__ float3 SUN_COLOR = make_float3(1.0f, 0.68f, 0.26f);
 __constant__ float3 WHITE = make_float3(1.0f, 1.0f, 1.0f);
 __constant__ float3 SKY_COLOR = make_float3(0.53f, 0.81f, 0.92f);
 
-// Structures
 struct Ray {
   float3 origin;
   float3 dir;
@@ -51,7 +49,6 @@ struct Hit {
   Material material;
 };
 
-// Utility functions
 __device__ float3 operator+(const float3 &a, const float3 &b) {
   return make_float3(a.x + b.x, a.y + b.y, a.z + b.z);
 }
@@ -86,7 +83,6 @@ __device__ float3 normalize(float3 v) {
   return v / len;
 }
 
-// Ray tracing functions
 __device__ bool check_specular(float reflectivity, curandState *state) {
   return curand_uniform(state) < reflectivity;
 }
