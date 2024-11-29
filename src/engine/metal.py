@@ -30,6 +30,9 @@ class MetalTracer:
             kernel_function, None
         )[0]
 
+        self.buffer_cache = {}
+        self.first = 0
+
     def render(
         self,
         view: "View",
@@ -56,11 +59,17 @@ class MetalTracer:
         ]
 
         buffers = []
-        for data in input_data:
-            buffers.append(self.get_and_load_buffer(data))
+        for idx, data in enumerate(input_data):
+            buffer_size = data.nbytes
+            buffer = self.get_buffer(buffer_size, idx)
+            buffer_array = (ctypes.c_byte * buffer_size).from_buffer(
+                buffer.contents().as_buffer(buffer_size)
+            )
+            buffer_array[:] = data.tobytes()
+            buffers.append(buffer)
 
         image_size = view.width * view.height * 3 * np.dtype(np.float32).itemsize
-        image_buffer = self.get_buffer(image_size)
+        image_buffer = self.get_buffer(image_size, len(buffers), shared=True)
         buffers.append(image_buffer)
 
         self.run_kernel(view.width * view.height, buffers)
@@ -71,17 +80,17 @@ class MetalTracer:
         img = np.frombuffer(output_array, dtype=np.float32)
         return img.reshape(view.height, view.width, 3).astype(np.uint8)
 
-    def get_and_load_buffer(self, data):
-        buffer_size = data.nbytes
-        metal_buffer = self.get_buffer(buffer_size)
-        buffer_array = (ctypes.c_byte * buffer_size).from_buffer(
-            metal_buffer.contents().as_buffer(buffer_size)
-        )
-        buffer_array[:] = data.tobytes()
-        return metal_buffer
-
-    def get_buffer(self, size):
-        return self.device.newBufferWithLength_options_(size, Metal.MTLResourceStorageModeShared)
+    def get_buffer(self, size, idx, shared=False):
+        if idx in self.buffer_cache:
+            if size in self.buffer_cache[idx]:
+                return self.buffer_cache[idx][size]
+            del self.buffer_cache[idx]
+        mode = Metal.MTLResourceStorageModePrivate
+        if shared:
+            mode = Metal.MTLResourceStorageModeShared
+        buffer = self.device.newBufferWithLength_options_(size, mode)
+        self.buffer_cache[idx] = {size: buffer}
+        return buffer
 
     def run_kernel(self, num_threads, buffers):
         command_buffer = self.command_queue.commandBuffer()
@@ -99,4 +108,4 @@ class MetalTracer:
         compute_encoder.endEncoding()
 
         command_buffer.commit()
-        command_buffer.waitUntilCompleted()
+        command_buffer.waitUntilCompleted()  # faster without wait, but screen tearing on movement

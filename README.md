@@ -129,7 +129,5 @@ python demo.py scene_name.yaml --device cuda
 
 
 # TODO
-- CUDA Acceleration [completed for metal devices; todo: cuda]
-- Some Sort of Mesh Support
-- More Materials (e.g. specular-diffuse combo)
-- More Accurate Luminosity Handling
+- Some Sort of Support for external scene formats
+- Transparency

@@ -180,6 +180,8 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
                        uint id [[thread_position_in_grid]]) {
   SimpleRNG rng = SimpleRNG(seed, id * id);
 
+  packed_float3 pixel = packed_float3(0.0f, 0.0f, 0.0f);
+
   for (int ray_num = 0; ray_num < num_rays; ray_num++) {
     Ray ray = get_ray(view, id, rng);
 
@@ -217,9 +219,9 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
       }
     }
 
-    image[id] += ray.color * ray.intensity;
+    pixel += ray.color * ray.intensity;
   }
 
   // tone map
-  image[id] = ((1 - exp(-image[id] * exposure / num_rays)) * 255.0);
+  image[id] = ((1 - exp(-pixel * exposure / num_rays)) * 255.0);
 }
