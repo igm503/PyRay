@@ -25,6 +25,9 @@ scene, view, render_config, save_config = parse_yaml(scene_path)
 
 debug = False
 last_time = time.time()
+first_time = last_time
+num_frames = 0
+avg_fps_start_lag = 50
 
 while True:
     img = scene.render(
@@ -34,6 +37,7 @@ while True:
         max_bounces=render_config["max_bounces"],
         device=args.device,
     )
+    num_frames += 1
 
     # img = cv2.resize(img, (3840, 2160), interpolation=cv2.INTER_NEAREST)
 
@@ -45,11 +49,18 @@ while True:
         info_label = f"pos: {np.round(view.origin, 2)}, dir: {np.round(view.dir, 2)}, fov: {math.degrees(view.fov)}"
 
         font = cv2.FONT_HERSHEY_SIMPLEX
-        width = len(info_label) * 9
+        width = len(info_label) * 18
 
-        cv2.rectangle(img, (0, 0), (width, 40), (0, 0, 0), -1)
-        cv2.putText(img, info_label, (5, 15), font, 0.5, (255, 255, 255), 1)
-        cv2.putText(img, fps_label, (5, 30), font, 0.5, (255, 255, 255), 1)
+        cv2.rectangle(img, (0, 0), (width, 140), (0, 0, 0), -1)
+        cv2.putText(img, info_label, (5, 40), font, 1, (255, 255, 255), 1)
+        cv2.putText(img, fps_label, (5, 80), font, 1, (255, 255, 255), 1)
+
+        if num_frames == avg_fps_start_lag:
+            first_time = time.time()
+        if num_frames > avg_fps_start_lag:
+            avg_fps = round((num_frames - avg_fps_start_lag) / (time.time() - first_time), 2)
+            avg_fps_label = f"avg fps: {avg_fps}"
+            cv2.putText(img, avg_fps_label, (5, 120), font, 1, (255, 255, 255), 1)
 
     cv2.imshow("image", img)
 
