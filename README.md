@@ -51,6 +51,8 @@ Press `R` to render the scene at high quality using the settings specified in th
 | `S` | Move camera backward |
 | `A` | Move camera left |
 | `D` | Move camera right |
+| `<space>` | Move camera up |
+| `<z>` | Move camera down |
 | `I` | Look up |
 | `K` | Look down |
 | `J` | Look left |

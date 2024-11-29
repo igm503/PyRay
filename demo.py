@@ -66,42 +66,51 @@ while True:
     cv2.imshow("image", img)
 
     key = cv2.waitKey(1) & 0xFF
-    if key == ord("q"):
-        break
-    elif key == ord("w"):
-        view.forward()
-    elif key == ord("s"):
-        view.back()
-    elif key == ord("a"):
-        view.left()
-    elif key == ord("d"):
-        view.right()
-    elif key == ord("i"):
-        view.look_up()
-    elif key == ord("k"):
-        view.look_down()
-    elif key == ord("j"):
-        view.look_left()
-    elif key == ord("l"):
-        view.look_right()
-    elif key == ord("r"):
-        prev_height = view.height
-        prev_width = view.width
-        view.width = save_config["resolution"][0]
-        view.height = save_config["resolution"][1]
-        scene.cumulative_render(
-            view,
-            num_rays=save_config["num_samples"],
-            max_bounces=save_config["max_bounces"],
-            save_dir=save_config["save_path"],
-            exposure=save_config["exposure"],
-            device=args.device,
-        )
-        view.height = prev_height
-        view.width = prev_width
-    elif key == ord("="):
-        view.fov -= 0.05 * view.fov
-    elif key == ord("-"):
-        view.fov += 0.05 * view.fov
-    elif key == ord("`"):
-        debug = not debug
+    
+    if key != 0xFF:
+        while cv2.waitKey(1) & 0xFF != 0xFF:
+            pass
+
+        if key == ord("q"):
+            break
+        elif key == ord("w"):
+            view.forward()
+        elif key == ord("s"):
+            view.back()
+        elif key == ord("a"):
+            view.left()
+        elif key == ord("d"):
+            view.right()
+        elif key == ord(" "):
+            view.up()
+        elif key == ord("z"):
+            view.down()
+        elif key == ord("i"):
+            view.look_up()
+        elif key == ord("k"):
+            view.look_down()
+        elif key == ord("j"):
+            view.look_left()
+        elif key == ord("l"):
+            view.look_right()
+        elif key == ord("="):
+            view.fov -= 0.05 * view.fov
+        elif key == ord("-"):
+            view.fov += 0.05 * view.fov
+        elif key == ord("`"):
+            debug = not debug
+        elif key == ord("r"):
+            prev_height = view.height
+            prev_width = view.width
+            view.width = save_config["resolution"][0]
+            view.height = save_config["resolution"][1]
+            scene.cumulative_render(
+                view,
+                num_rays=save_config["num_samples"],
+                max_bounces=save_config["max_bounces"],
+                save_dir=save_config["save_path"],
+                exposure=save_config["exposure"],
+                device=args.device,
+            )
+            view.height = prev_height
+            view.width = prev_width

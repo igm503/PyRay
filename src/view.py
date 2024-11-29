@@ -40,6 +40,12 @@ class View:
     def back(self):
         self.origin = self.origin - self.dir * self.move_speed
 
+    def up(self):
+        self.origin = self.origin + np.array([0, 0, 1]) * self.move_speed
+
+    def down(self):
+        self.origin = self.origin - np.array([0, 0, 1]) * self.move_speed
+
     def left(self):
         self.origin = self.origin + self.left_dir * self.move_speed
 
