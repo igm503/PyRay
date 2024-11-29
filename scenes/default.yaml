@@ -1,20 +1,20 @@
 view:
   origin: [-30, -14.0, 5.0]
   dir: [0.1, 0.1, 0]
-  width: 1700
-  height: 1100
   fov: 70
   exposure: 3.0
   num_samples: 10
   max_bounces: 50
+  render_resolution: [1280, 720]
+  display_resolution: [2560, 1440]
+
 
 save_render:
   save_path: renders/default
-  width: 3400
-  height: 2200
   exposure: 3.0
   num_samples: 1000
-  max_bounces: 100
+  max_bounces: 500
+  resolution: [3840, 2160]
 
 surfaces:
   

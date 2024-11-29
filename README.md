@@ -68,12 +68,12 @@ view:                                # parameters for virtual camera
 
   origin: [-30, -14.0, 5.0]          # initial cam position
   dir: [0.1, 0.1, 0]                 # initial cam direction
-  width: 1920                        # resolution of rendering
-  height: 1080
   fov: 70                            # field of view (degrees) of rendering
   exposure: 3.0                      # brightness of render
   num_samples: 10                    # number of rays to simulate per pixel
   max_bounces: 50                    # number of bounces each ray can travel
+  render_resolution: [1280, 720]     # resolution of render
+  display_resolution: [2560, 1440]   # resolution to display render at
 
 save_render:                         # parameters for high quality saved renders
   save_path: renders/default         # directory to save in
@@ -82,6 +82,7 @@ save_render:                         # parameters for high quality saved renders
   exposure: 3.0
   num_samples: 1000
   max_bounces: 100
+  resolution: [1280, 720]            # resolution of iterative render
 
 surfaces:                            # list of objects in scene
 

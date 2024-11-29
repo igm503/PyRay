@@ -11,15 +11,14 @@ class View:
         self,
         origin: list = [0, 0, 0],
         dir: list = [0, 1, 0],
-        width: int = 1920,
-        height: int = 1080,
+        resolution: tuple = (1920, 1080),
         fov: float = 70,
     ):
         self.origin = np.array(origin)
         self.dir = normalize(np.array(dir))
         self.fov = math.radians(fov)
-        self.width = width
-        self.height = height
+        self.width = resolution[0]
+        self.height = resolution[1]
         self.left_dir = normalize(np.cross(np.array([0, 0, 1]), self.dir))
 
         self.move_speed = 3

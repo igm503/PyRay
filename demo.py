@@ -39,7 +39,7 @@ while True:
     )
     num_frames += 1
 
-    # img = cv2.resize(img, (3840, 2160), interpolation=cv2.INTER_NEAREST)
+    img = cv2.resize(img, render_config["display_resolution"], interpolation=cv2.INTER_NEAREST)
 
     if debug:
         fps = round(1 / (time.time() - last_time), 2)
@@ -51,7 +51,8 @@ while True:
         font = cv2.FONT_HERSHEY_SIMPLEX
         width = len(info_label) * 18
 
-        cv2.rectangle(img, (0, 0), (width, 140), (0, 0, 0), -1)
+        height = 140 if num_frames > avg_fps_start_lag else 100
+        cv2.rectangle(img, (0, 0), (width, height), (0, 0, 0), -1)
         cv2.putText(img, info_label, (5, 40), font, 1, (255, 255, 255), 1)
         cv2.putText(img, fps_label, (5, 80), font, 1, (255, 255, 255), 1)
 
@@ -86,8 +87,8 @@ while True:
     elif key == ord("r"):
         prev_height = view.height
         prev_width = view.width
-        view.height = save_config["height"]
-        view.width = save_config["width"]
+        view.width = save_config["resolution"][0]
+        view.height = save_config["resolution"][1]
         scene.cumulative_render(
             view,
             num_rays=save_config["num_samples"],
