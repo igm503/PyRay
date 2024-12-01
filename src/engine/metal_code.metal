@@ -79,8 +79,9 @@ float schlick_fresnel(float cosine, float eta1, float eta2) {
   return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
-bool check_transmission(float transparency, float eta1, float eta2, packed_float3 dir,
-                        packed_float3 normal, thread SimpleRNG &rng) {
+bool check_transmission(float transparency, float eta1, float eta2,
+                        packed_float3 dir, packed_float3 normal,
+                        thread SimpleRNG &rng) {
   if (transparency <= 0.0f) {
     return false;
   }
@@ -144,8 +145,10 @@ Ray add_environment(Ray ray) {
 }
 
 Ray get_ray(constant View &view, uint base_id, thread SimpleRNG &rng) {
-  float x_offset = static_cast<float>(base_id % view.width) + rng.rand() - 0.5f;
-  int y_offset = static_cast<float>(base_id / view.width) + rng.rand() - 0.5f;
+  float x_offset =
+      static_cast<float>(base_id % view.width) + 3 * rng.rand() - 1.5f;
+  int y_offset =
+      static_cast<float>(base_id / view.width) + 3 * rng.rand() - 1.5f;
 
   return Ray{view.origin,
              normalize(view.top_left_dir + x_offset * view.right_dir +
@@ -248,10 +251,13 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
                        constant int &num_spheres [[buffer(3)]],
                        constant int &num_triangles [[buffer(4)]],
                        constant int &num_bounces [[buffer(5)]],
-                       constant int &num_rays [[buffer(6)]],
-                       constant int &seed [[buffer(7)]],
+                       constant int &seed [[buffer(6)]],
+                       constant int &num_rays [[buffer(7)]],
                        constant float &exposure [[buffer(8)]],
-                       device packed_float3 *image [[buffer(9)]],
+                       constant bool &accumulate [[buffer(9)]],
+                       constant int &current_iteration [[buffer(10)]],
+                       device packed_float3 *hdr_accumulation [[buffer(11)]],
+                       device packed_float3 *output_image [[buffer(12)]],
                        uint id [[thread_position_in_grid]]) {
   SimpleRNG rng = SimpleRNG(seed, id * id);
 
@@ -301,8 +307,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
         if (closestHit.internal) {
           eta1 = closestHit.material.refractive_index;
           eta2 = 1.0f;
-        }
-        else {
+        } else {
           eta1 = 1.0f;
           eta2 = closestHit.material.refractive_index;
         }
@@ -311,7 +316,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
             check_transmission(closestHit.material.transparency, eta1, eta2,
                                ray.dir, closestHit.normal, rng);
         if (is_transmission) {
-          ray.origin += -100*epsilon * closestHit.normal;
+          ray.origin += -100 * epsilon * closestHit.normal;
           ray.dir = refract_dir(ray.dir, closestHit.normal, closestHit.internal,
                                 ref_rat, closestHit.material.translucency, rng);
         } else {
@@ -328,6 +333,18 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
     pixel += ray.color * ray.intensity;
   }
 
-  // tone map
-  image[id] = ((1 - exp(-pixel * exposure / num_rays)) * 255.0);
+  pixel = pixel * exposure / num_rays;
+
+  if (accumulate) {
+    if (current_iteration == 0) {
+      hdr_accumulation[id] = pixel;
+    } else {
+      hdr_accumulation[id] = hdr_accumulation[id] + pixel;
+    }
+
+    packed_float3 avg = hdr_accumulation[id] / (current_iteration + 1);
+    output_image[id] = ((1 - exp(-avg)) * 255.0);
+  } else {
+    output_image[id] = ((1 - exp(-pixel)) * 255.0);
+  }
 }

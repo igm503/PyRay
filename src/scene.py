@@ -22,9 +22,7 @@ class Scene:
         exposure: float = 3.0,
         device: str = "cpu",
     ):
-        if not hasattr(self, device):
-            setattr(self, device, get_engine(device))
-        engine = getattr(self, device)
+        engine = self.engine(device)
         img = engine.render(view, self.spheres, self.triangles, num_rays, max_bounces, exposure)
         return cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
@@ -46,16 +44,30 @@ class Scene:
             os.makedirs(path)
             save_dir = path
 
-        current_img = None
-        img = np.zeros((view.height, view.width, 3))
+        engine = self.engine(device)
         print(f"Rendering {num_rays} rays. Will save to {save_dir}")
-        for i in tqdm(range(num_rays // 10)):
-            img += self.render(view, 10, max_bounces, exposure, device)
-            current_img = img / (i + 1)
-            current_img = np.clip(current_img, 0, 255).astype(np.uint8)
-            if save_dir is not None:
-                cv2.imwrite(f"{save_dir}/output_{i}.png", current_img)
+        rays_per_frame = 100
+        num_iterations = num_rays // rays_per_frame
+        for current_img in tqdm(
+            engine.cumulative_render(
+                view,
+                self.spheres,
+                self.triangles,
+                rays_per_frame,
+                max_bounces,
+                exposure,
+                num_iterations,
+            ),
+            total=num_iterations,
+        ):
+            current_img = cv2.cvtColor(current_img, cv2.COLOR_RGB2BGR)
             cv2.imshow("image", current_img)
             cv2.waitKey(1)
+        if save_dir is not None:
+            cv2.imwrite(f"{save_dir}/output.png", current_img)
         print(f"Renders are saved to {save_dir}")
-        return current_img
+
+    def engine(self, device: str):
+        if not hasattr(self, device):
+            setattr(self, device, get_engine(device))
+        return getattr(self, device)
