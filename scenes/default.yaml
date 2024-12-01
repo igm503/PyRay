@@ -2,7 +2,7 @@ view:
   origin: [-30, -14.0, 3]
   dir: [0.1, 0.1, -0.0]
   fov: 70
-  exposure: 3.0
+  exposure: 2.0
   num_samples: 10
   max_bounces: 500
   render_resolution: [1280, 720]
@@ -26,7 +26,7 @@ surfaces:
       - [15000, 15000.0, -0]
       - [-15000.0, 15000, -0]
     material:
-      color: [0, 0.5, 0]
+      color: [0.1, 0.3, 0.1]
       reflectivity: 0.0
       luminance: 0.0
   - type: triangle
@@ -35,7 +35,7 @@ surfaces:
       - [15000, -15000.0, -0]
       - [15000.0, 15000, -0]
     material:
-      color: [0, 0.5, 0]
+      color: [0.1, 0.3, 0.1]
       reflectivity: 0.0
       luminance: 0.0
 
@@ -130,57 +130,59 @@ surfaces:
     radius: 10
     material:
       color: [1, 1, 1]
-      reflectivity: 0.0
-      luminance: 0.0
   - type: sphere
     center: [50.0, 70.0, 20.0]
     radius: 10
     material:
       color: [1.0, 0.7, 0.7]
-      reflectivity: 0.0
       luminance: 1.0
   - type: sphere
     center: [0.0, 5.0, 2.0]
     radius: 1
     material:
-      color: [0.0, 0, 0.5]
-      reflectivity: 0.0
-      luminance: 1.0
+      color: [0.1, 0.1, 0.5]
+
   - type: sphere
     center: [-12.0, 7.0, 6.0]
     radius: 2
     material:
-      color: [0.7, 0.7, 1.0]
-      reflectivity: 1.0
-      luminance: 0.0
+      color: [0.2, 0.2, 1.0]
+      reflectivity: 0.5
   - type: sphere
     center: [-13.0, 7, 2.0]
     radius: 2
     material:
       color: [1.0, 0.7, 0.7]
       reflectivity: 1.0
-      luminance: 0.0
+
   - type: sphere
     center: [700.0, 500.0, -200]
     radius: 500
     material:
       color: [0.7, 0, 0.5]
       reflectivity: 0.2
-      luminance: 0.1
+
   - type: sphere
     center: [200.0, 100.0, 200]
     radius: 200
     material:
       color: [0.7, 0.4, 0.5]
       reflectivity: 0.7
-      luminance: 0.1
+
   - type: sphere
     center: [-4.0, -6.0, 5]
     radius: 3
     material:
       color: [0.9, 0.9, 0.9]
       reflectivity: 1.0
-      luminance: 0.0
       transparency: 0.0
       refractive_index: 0.8
       translucency: 0.00
+      
+  # sun
+  - type: sphere
+    center: [-90000.0, 150000.0, 100000.0]
+    radius: 5000
+    material:
+      color: [1.0, 1.0, 0.7]
+      luminance: 1_000_000.0

@@ -4,8 +4,6 @@ using namespace metal;
 
 constant float epsilon = 1e-6;
 
-constant float3 sun_color = float3(1.0, 0.68, 0.26);
-constant float3 white = float3(1.0, 1.0, 1.0);
 constant float3 sky_color = float3(0.53, 0.81, 0.92);
 
 class SimpleRNG {
@@ -140,14 +138,8 @@ packed_float3 reflect_diffuse(packed_float3 normal, thread SimpleRNG &rng) {
 
 Ray add_environment(Ray ray) {
   packed_float3 color;
-  if (ray.dir.z > .98) {
-    float scale = (ray.dir.z - .98) / .02;
-    color = scale * white + (1 - scale) * sun_color;
-    ray.intensity += 1.0;
-  } else {
-    color = sky_color;
-    ray.intensity += 0.5;
-  }
+  color = sky_color;
+  ray.intensity = 1.0;
   ray.color = ray.color * color;
   return ray;
 }
@@ -300,17 +292,18 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
           current_triangle_hit = -1;
         }
         ray.origin = ray.origin + closestHit.t * ray.dir;
-        ray.intensity += closestHit.material.intensity;
         ray.color = ray.color * closestHit.material.color;
         packed_float3 diffuse_dir = reflect_diffuse(closestHit.normal, rng);
         packed_float3 specular_dir =
             reflect_specular(ray.dir, closestHit.normal);
-        packed_float3 reflectivity = {closestHit.material.reflectivity,
-                                      closestHit.material.reflectivity,
-                                      closestHit.material.reflectivity};
-        ray.dir = normalize(mix(diffuse_dir, specular_dir, reflectivity));
+        ray.dir = normalize(
+            mix(diffuse_dir, specular_dir, closestHit.material.reflectivity));
         /*ray.dir = perturb_dir(ray.dir, closestHit.material.translucency,
          * rng);*/
+        if (closestHit.material.intensity > 0) {
+          ray.intensity = closestHit.material.intensity;
+          break;
+        }
       } else {
         ray = add_environment(ray);
         break;

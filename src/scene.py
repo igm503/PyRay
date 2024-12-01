@@ -49,8 +49,8 @@ class Scene:
         current_img = None
         img = np.zeros((view.height, view.width, 3))
         print(f"Rendering {num_rays} rays. Will save to {save_dir}")
-        for i in tqdm(range(num_rays)):
-            img += self.render(view, 1, max_bounces, exposure, device)
+        for i in tqdm(range(num_rays // 10)):
+            img += self.render(view, 10, max_bounces, exposure, device)
             current_img = img / (i + 1)
             current_img = np.clip(current_img, 0, 255).astype(np.uint8)
             if save_dir is not None:
