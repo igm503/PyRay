@@ -29,6 +29,11 @@ class MetalTracer:
         )[0]
         self.command_queue = self.device.newCommandQueue()
 
+        trace_function = self.metal_library.newFunctionWithName_("trace_rays")
+        self.trace_pipeline = self.device.newComputePipelineStateWithFunction_error_(
+            trace_function, None
+        )[0]
+
         self.buffer_cache = {}
 
     def _render_iteration(
