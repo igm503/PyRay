@@ -92,7 +92,7 @@ bool check_transmission(float transparency, float ref_idx, packed_float3 dir,
   return rng.rand() > reflection_prob;
 }
 
-packed_float3 reflect_dir(packed_float3 dir, packed_float3 normal) {
+packed_float3 reflect_specular(packed_float3 dir, packed_float3 normal) {
   return dir - 2 * dot(dir, normal) * normal;
 }
 
@@ -103,7 +103,7 @@ packed_float3 refract_dir(packed_float3 dir, packed_float3 normal,
   float sin_theta_prime = sin_theta / ref_idx;
 
   if (sin_theta_prime > 1.0) {
-    packed_float3 reflected_dir = reflect_dir(dir, normal);
+    packed_float3 reflected_dir = reflect_specular(dir, normal);
     return reflected_dir;
   }
 
@@ -123,10 +123,6 @@ packed_float3 perturb_dir(packed_float3 dir, float translucency,
   return normalize(dir + translucency * packed_float3(r1, r2, r3));
 }
 
-bool check_specular(float reflectivity, thread SimpleRNG &rng) {
-  return rng.rand() < reflectivity;
-}
-
 packed_float3 rand_dir(packed_float3 normal, thread SimpleRNG &rng) {
   float r1 = rng.rand_normal();
   float r2 = rng.rand_normal();
@@ -134,7 +130,7 @@ packed_float3 rand_dir(packed_float3 normal, thread SimpleRNG &rng) {
   return normalize(normal + packed_float3(r1, r2, r3));
 }
 
-packed_float3 diffuse_dir(packed_float3 normal, thread SimpleRNG &rng) {
+packed_float3 reflect_diffuse(packed_float3 normal, thread SimpleRNG &rng) {
   packed_float3 random_dir = rand_dir(normal, rng);
   if (dot(random_dir, normal) < 0) {
     random_dir = -random_dir;
@@ -304,17 +300,17 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
           current_triangle_hit = -1;
         }
         ray.origin = ray.origin + closestHit.t * ray.dir;
-        bool is_specular =
-            check_specular(closestHit.material.reflectivity, rng);
-        if (is_specular) {
-          ray.dir = reflect_dir(ray.dir, closestHit.normal);
-          ray.origin = ray.origin + epsilon * closestHit.normal;
-        } else {
-          ray.color = ray.color * closestHit.material.color;
-          ray.intensity += closestHit.material.intensity;
-          ray.dir = diffuse_dir(closestHit.normal, rng);
-          ray.dir = perturb_dir(ray.dir, closestHit.material.translucency, rng);
-        }
+        ray.intensity += closestHit.material.intensity;
+        ray.color = ray.color * closestHit.material.color;
+        packed_float3 diffuse_dir = reflect_diffuse(closestHit.normal, rng);
+        packed_float3 specular_dir =
+            reflect_specular(ray.dir, closestHit.normal);
+        packed_float3 reflectivity = {closestHit.material.reflectivity,
+                                      closestHit.material.reflectivity,
+                                      closestHit.material.reflectivity};
+        ray.dir = normalize(mix(diffuse_dir, specular_dir, reflectivity));
+        /*ray.dir = perturb_dir(ray.dir, closestHit.material.translucency,
+         * rng);*/
       } else {
         ray = add_environment(ray);
         break;
