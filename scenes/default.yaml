@@ -1,10 +1,10 @@
 view:
-  origin: [-30, -14.0, 3]
-  dir: [0.1, 0.1, -0.0]
+  origin: [-20, -10.0, 6]
+  dir: [1.0, 0.4, -0.0]
   fov: 70
   exposure: 2.0
-  num_samples: 10
-  max_bounces: 500
+  num_samples: 100
+  max_bounces: 100
   render_resolution: [1280, 720]
   display_resolution: [2560, 1440]
 
@@ -147,7 +147,7 @@ surfaces:
     radius: 2
     material:
       color: [0.2, 0.2, 1.0]
-      reflectivity: 0.5
+      reflectivity: 1.0
   - type: sphere
     center: [-13.0, 7, 2.0]
     radius: 2
@@ -160,7 +160,7 @@ surfaces:
     radius: 500
     material:
       color: [0.7, 0, 0.5]
-      reflectivity: 0.2
+      reflectivity: 1.0
 
   - type: sphere
     center: [200.0, 100.0, 200]
@@ -173,10 +173,10 @@ surfaces:
     center: [-4.0, -6.0, 5]
     radius: 3
     material:
-      color: [0.9, 0.9, 0.9]
-      reflectivity: 1.0
-      transparency: 0.0
-      refractive_index: 0.8
+      color: [1.0, 1.0, 1.0]
+      reflectivity: 0.9
+      transparency: 0.9
+      refractive_index: 1.2
       translucency: 0.00
       
   # sun

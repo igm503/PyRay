@@ -73,52 +73,21 @@ constant Hit NO_HIT =
     Hit{INFINITY, false, packed_float3(0.0f, 0.0f, 0.0f),
         Material{packed_float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f}};
 
-float schlick_fresnel(float cosine, float ref_idx) {
-  float r0 = (1 - ref_idx) / (1 + ref_idx);
+float schlick_fresnel(float cosine, float eta1, float eta2) {
+  float r0 = (eta1 - eta2) / (eta1 + eta2);
   r0 = r0 * r0;
   return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
-bool check_transmission(float transparency, float ref_idx, packed_float3 dir,
+bool check_transmission(float transparency, float eta1, float eta2, packed_float3 dir,
                         packed_float3 normal, thread SimpleRNG &rng) {
   if (transparency <= 0.0f) {
     return false;
   }
-  float fresnel = schlick_fresnel(abs(dot(dir, normal)), ref_idx);
+  float fresnel = schlick_fresnel(abs(dot(dir, normal)), eta1, eta2);
   float reflection_prob = fresnel * (1 - transparency);
 
   return rng.rand() > reflection_prob;
-}
-
-packed_float3 reflect_specular(packed_float3 dir, packed_float3 normal) {
-  return dir - 2 * dot(dir, normal) * normal;
-}
-
-packed_float3 refract_dir(packed_float3 dir, packed_float3 normal,
-                          float ref_idx) {
-  float cos_theta = abs(dot(dir, normal));
-  float sin_theta = sqrt(1.0 - cos_theta * cos_theta);
-  float sin_theta_prime = sin_theta / ref_idx;
-
-  if (sin_theta_prime > 1.0) {
-    packed_float3 reflected_dir = reflect_specular(dir, normal);
-    return reflected_dir;
-  }
-
-  float cos_theta_prime = sqrt(1.0 - sin_theta_prime * sin_theta_prime);
-
-  packed_float3 r_parallel = (dir + normal * cos_theta) / ref_idx;
-  packed_float3 r_perp = -normal * cos_theta_prime;
-
-  return normalize(r_parallel + r_perp);
-}
-
-packed_float3 perturb_dir(packed_float3 dir, float translucency,
-                          thread SimpleRNG &rng) {
-  float r1 = rng.rand_normal();
-  float r2 = rng.rand_normal();
-  float r3 = rng.rand_normal();
-  return normalize(dir + translucency * packed_float3(r1, r2, r3));
 }
 
 packed_float3 rand_dir(packed_float3 normal, thread SimpleRNG &rng) {
@@ -130,10 +99,40 @@ packed_float3 rand_dir(packed_float3 normal, thread SimpleRNG &rng) {
 
 packed_float3 reflect_diffuse(packed_float3 normal, thread SimpleRNG &rng) {
   packed_float3 random_dir = rand_dir(normal, rng);
-  if (dot(random_dir, normal) < 0) {
+  if (dot(random_dir, normal) <= 0) {
     random_dir = -random_dir;
   }
   return random_dir;
+}
+packed_float3 reflect_specular(packed_float3 dir, packed_float3 normal) {
+  return dir - 2 * dot(dir, normal) * normal;
+}
+
+packed_float3 refract_dir(packed_float3 dir, packed_float3 normal,
+                          bool internal, float ref_rat, float translucency,
+                          thread SimpleRNG &rng) {
+  dir = normalize(dir);
+  normal = normalize(normal);
+
+  float cos_i = dot(normal, dir);
+
+  float cos_t_squared = 1.0f - ref_rat * ref_rat * (1.0f - cos_i * cos_i);
+
+  if (cos_t_squared < 0.0f) {
+    return reflect_specular(dir, normal);
+  }
+
+  packed_float3 refracted_dir = normalize(
+      ref_rat * dir + (ref_rat * cos_i - sqrt(cos_t_squared)) * normal);
+  packed_float3 diffuse_dir = reflect_diffuse(normal, rng);
+
+  return normalize(mix(refracted_dir, diffuse_dir, translucency));
+}
+packed_float3 reflect(packed_float3 dir, packed_float3 normal,
+                      float reflectivity, thread SimpleRNG &rng) {
+  packed_float3 diffuse_dir = reflect_diffuse(normal, rng);
+  packed_float3 specular_dir = reflect_specular(dir, normal);
+  return normalize(mix(diffuse_dir, specular_dir, reflectivity));
 }
 
 Ray add_environment(Ray ray) {
@@ -154,7 +153,7 @@ Ray get_ray(constant View &view, uint base_id, thread SimpleRNG &rng) {
              packed_float3(1.0f, 1.0f, 1.0f), 0.0f};
 }
 
-Hit sphere_hit(Ray ray, Sphere sphere) {
+Hit _sphere_hit(Ray ray, Sphere sphere) {
   packed_float3 ray_offset_origin = ray.origin - sphere.center;
   float b = 2 * dot(ray.dir, ray_offset_origin);
   float c = length_squared(ray_offset_origin) - sphere.radius * sphere.radius;
@@ -171,7 +170,7 @@ Hit sphere_hit(Ray ray, Sphere sphere) {
   return NO_HIT;
 }
 
-Hit _sphere_hit(Ray ray, Sphere sphere) {
+Hit sphere_hit(Ray ray, Sphere sphere) {
   packed_float3 ray_offset_origin = ray.origin - sphere.center;
   float b = 2 * dot(ray.dir, ray_offset_origin);
   float c = length_squared(ray_offset_origin) - sphere.radius * sphere.radius;
@@ -187,7 +186,7 @@ Hit _sphere_hit(Ray ray, Sphere sphere) {
     if (t1 > epsilon) {
       t = t1;
       internal = false;
-    } else if (t2 > epsilon) {
+    } else if (t2 > epsilon && sphere.material.transparency > 0.0f) {
       t = t2;
       internal = true;
     } else {
@@ -258,10 +257,9 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
 
   packed_float3 pixel = packed_float3(0.0f, 0.0f, 0.0f);
 
-  int last_triangle_hit = -1;
-  int current_triangle_hit = -1;
-
   for (int ray_num = 0; ray_num < num_rays; ray_num++) {
+    int last_triangle_hit = -1;
+    int current_triangle_hit = -1;
     Ray ray = get_ray(view, id, rng);
 
     for (int bounce = 0; bounce < num_bounces; bounce++) {
@@ -276,7 +274,6 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
 
       for (int triangle_id = 0; triangle_id < num_triangles; triangle_id++) {
         if (triangle_id == last_triangle_hit) {
-          last_triangle_hit = -1;
           continue;
         }
         Hit hit = triangle_hit(ray, triangles[triangle_id]);
@@ -285,25 +282,43 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
           closestHit = hit;
         }
       }
-
+      last_triangle_hit = -1;
+      if (current_triangle_hit != -1) {
+        last_triangle_hit = current_triangle_hit;
+        current_triangle_hit = -1;
+      }
       if (closestHit.t < INFINITY) {
-        if (current_triangle_hit != -1) {
-          last_triangle_hit = current_triangle_hit;
-          current_triangle_hit = -1;
-        }
+
         ray.origin = ray.origin + closestHit.t * ray.dir;
         ray.color = ray.color * closestHit.material.color;
-        packed_float3 diffuse_dir = reflect_diffuse(closestHit.normal, rng);
-        packed_float3 specular_dir =
-            reflect_specular(ray.dir, closestHit.normal);
-        ray.dir = normalize(
-            mix(diffuse_dir, specular_dir, closestHit.material.reflectivity));
-        /*ray.dir = perturb_dir(ray.dir, closestHit.material.translucency,
-         * rng);*/
+
         if (closestHit.material.intensity > 0) {
           ray.intensity = closestHit.material.intensity;
           break;
         }
+        float eta1;
+        float eta2;
+        if (closestHit.internal) {
+          eta1 = closestHit.material.refractive_index;
+          eta2 = 1.0f;
+        }
+        else {
+          eta1 = 1.0f;
+          eta2 = closestHit.material.refractive_index;
+        }
+        float ref_rat = eta1 / eta2;
+        bool is_transmission =
+            check_transmission(closestHit.material.transparency, eta1, eta2,
+                               ray.dir, closestHit.normal, rng);
+        if (is_transmission) {
+          ray.origin += -100*epsilon * closestHit.normal;
+          ray.dir = refract_dir(ray.dir, closestHit.normal, closestHit.internal,
+                                ref_rat, closestHit.material.translucency, rng);
+        } else {
+          ray.dir = reflect(ray.dir, closestHit.normal,
+                            closestHit.material.reflectivity, rng);
+        }
+
       } else {
         ray = add_environment(ray);
         break;

@@ -3,7 +3,7 @@ from pathlib import Path
 import ctypes
 
 import Metal  # from pyobjc
-# import metalcompute as mc
+import metalcompute as mc
 import numpy as np
 
 from ..types import inputs_to_numpy
@@ -21,8 +21,8 @@ class MetalTracer:
         with open(metal_code_path, "r") as f:
             metal_code = f.read()
 
-        # dev = mc.Device()
-        # dev.kernel(metal_code)
+        dev = mc.Device()
+        dev.kernel(metal_code)
 
         self.metal_library = self.device.newLibraryWithSource_options_error_(
             metal_code, None, None
