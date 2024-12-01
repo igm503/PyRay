@@ -48,21 +48,26 @@ class Scene:
         print(f"Rendering {num_rays} rays. Will save to {save_dir}")
         rays_per_frame = 100
         num_iterations = num_rays // rays_per_frame
-        for current_img in tqdm(
-            engine.cumulative_render(
-                view,
-                self.spheres,
-                self.triangles,
-                rays_per_frame,
-                max_bounces,
-                exposure,
-                num_iterations,
+        save_interval = num_iterations // 10
+        for i, current_img in tqdm(
+            enumerate(
+                engine.cumulative_render(
+                    view,
+                    self.spheres,
+                    self.triangles,
+                    rays_per_frame,
+                    max_bounces,
+                    exposure,
+                    num_iterations,
+                )
             ),
             total=num_iterations,
         ):
             current_img = cv2.cvtColor(current_img, cv2.COLOR_RGB2BGR)
             cv2.imshow("image", current_img)
             cv2.waitKey(1)
+            if save_dir is not None and i % save_interval == 0:
+                cv2.imwrite(f"{save_dir}/{i * rays_per_frame}_rays.png", current_img)
         if save_dir is not None:
             cv2.imwrite(f"{save_dir}/output.png", current_img)
         print(f"Renders are saved to {save_dir}")

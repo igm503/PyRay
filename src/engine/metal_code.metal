@@ -112,9 +112,6 @@ packed_float3 reflect_specular(packed_float3 dir, packed_float3 normal) {
 packed_float3 refract_dir(packed_float3 dir, packed_float3 normal,
                           bool internal, float ref_rat, float translucency,
                           thread SimpleRNG &rng) {
-  dir = normalize(dir);
-  normal = normalize(normal);
-
   float cos_i = dot(normal, dir);
 
   float cos_t_squared = 1.0f - ref_rat * ref_rat * (1.0f - cos_i * cos_i);
@@ -246,12 +243,12 @@ Hit triangle_hit(Ray ray, Triangle triangle) {
 }
 
 kernel void trace_rays(constant View &view [[buffer(0)]],
-                       const device Sphere *spheres [[buffer(1)]],
-                       const device Triangle *triangles [[buffer(2)]],
-                       constant int &num_spheres [[buffer(3)]],
-                       constant int &num_triangles [[buffer(4)]],
-                       constant int &num_bounces [[buffer(5)]],
-                       constant int &seed [[buffer(6)]],
+                       constant int &seed [[buffer(1)]],
+                       const device Sphere *spheres [[buffer(2)]],
+                       const device Triangle *triangles [[buffer(3)]],
+                       constant int &num_spheres [[buffer(4)]],
+                       constant int &num_triangles [[buffer(5)]],
+                       constant int &num_bounces [[buffer(6)]],
                        constant int &num_rays [[buffer(7)]],
                        constant float &exposure [[buffer(8)]],
                        constant bool &accumulate [[buffer(9)]],

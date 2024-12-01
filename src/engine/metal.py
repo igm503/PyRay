@@ -3,6 +3,7 @@ from pathlib import Path
 import ctypes
 
 import Metal  # from pyobjc
+
 # import metalcompute as mc
 import numpy as np
 
@@ -45,47 +46,45 @@ class MetalTracer:
         max_bounces: int,
         exposure: float,
         accumulate: bool,
-        iteration: int,
+        iteration: int = 0,
     ):
         np_view, np_spheres, np_triangles = inputs_to_numpy(view, spheres, triangles)
-
-        image_size = view.width * view.height * 3 * np.dtype(np.float32).itemsize
-        hdr_buffer = self.get_buffer(image_size, "hdr_accum", shared=True)
-        output_buffer = self.get_buffer(image_size, "output", shared=True)
 
         seed = np.random.randint(0, 2**16 - 1, dtype=np.int32)
 
         input_data = [
-            np_view,
-            np_spheres,
-            np_triangles,
-            np.int32(len(np_spheres)),
-            np.int32(len(np_triangles)),
-            np.int32(max_bounces),
-            seed,
-            np.int32(num_rays),
-            np.float32(exposure),
-            np.bool_(accumulate),
-            np.int32(iteration),
+            (np_view, "view"),
+            (seed, "seed"),
+            (np_spheres, "spheres"),
+            (np_triangles, "triangles"),
+            (np.int32(len(np_spheres)), "num_spheres"),
+            (np.int32(len(np_triangles)), "num_triangles"),
+            (np.int32(max_bounces), "max_bounces"),
+            (np.int32(num_rays), "num_rays"),
+            (np.float32(exposure), "exposure"),
+            (np.bool_(accumulate), "accumulate"),
+            (np.int32(iteration), "iteration"),
         ]
 
         buffers = []
-        for idx, data in enumerate(input_data):
+        for data, name in input_data:
             buffer_size = data.nbytes if hasattr(data, "nbytes") else data.itemsize
-            buffer = self.get_buffer(buffer_size, idx)
-            buffer_array = (ctypes.c_byte * buffer_size).from_buffer(
-                buffer.contents().as_buffer(buffer_size)
-            )
-            buffer_array[:] = data.tobytes() if hasattr(data, "tobytes") else data
+            buffer = self.get_buffer(buffer_size, name, cache_data=data)
+            if name in ["view", "seed"]:
+                self.load_buffer(buffer, data, buffer_size)
+            elif name in "iteration" and accumulate:
+                self.load_buffer(buffer, data, buffer_size)
             buffers.append(buffer)
+
+        num_pixels = view.width * view.height
+        image_size = num_pixels * 3 * np.dtype(np.float32).itemsize
+        hdr_buffer = self.get_buffer(image_size, "hdr_accum", shared=True)
+        output_buffer = self.get_buffer(image_size, "output", shared=True)
 
         buffers.extend([hdr_buffer, output_buffer])
 
-        num_pixels = view.width * view.height
-
         self.run_kernel(num_pixels, buffers, self.trace_pipeline)
 
-        image_size = num_pixels * 3 * np.dtype(np.float32).itemsize
         output_array = (ctypes.c_float * (num_pixels * 3)).from_buffer(
             output_buffer.contents().as_buffer(image_size)
         )
@@ -109,7 +108,6 @@ class MetalTracer:
             max_bounces,
             exposure,
             False,
-            0,
         )
 
     def cumulative_render(
@@ -122,6 +120,7 @@ class MetalTracer:
         exposure: float,
         num_iterations: int,
     ):
+        self.buffer_cache = {}
         for iteration in range(num_iterations):
             yield self._render_iteration(
                 view,
@@ -134,17 +133,27 @@ class MetalTracer:
                 iteration,
             )
 
-    def get_buffer(self, size, idx, shared=False):
+    def get_buffer(self, size, idx, shared=False, cache_data=None):
         if idx in self.buffer_cache:
             if size in self.buffer_cache[idx]:
                 return self.buffer_cache[idx][size]
-            del self.buffer_cache[idx]
+            else:
+                del self.buffer_cache[idx]
+        return self.create_buffer(size, idx, shared, cache_data)
+
+    def create_buffer(self, size, idx, shared=False, cache_data=None):
         mode = Metal.MTLResourceStorageModePrivate
         if shared:
             mode = Metal.MTLResourceStorageModeShared
         buffer = self.device.newBufferWithLength_options_(size, mode)
         self.buffer_cache[idx] = {size: buffer}
+        if cache_data is not None:
+            self.load_buffer(buffer, cache_data, size)
         return buffer
+
+    def load_buffer(self, buffer, data, size):
+        buffer_array = (ctypes.c_byte * size).from_buffer(buffer.contents().as_buffer(size))
+        buffer_array[:] = data.tobytes() if hasattr(data, "tobytes") else data
 
     def run_kernel(self, num_threads, buffers, pipeline, wait=True):
         command_buffer = self.command_queue.commandBuffer()
