@@ -69,6 +69,10 @@ __device__ float3 operator*(const float3 &a, const float3 &b) {
   return make_float3(a.x * b.x, a.y * b.y, a.z * b.z);
 }
 
+__device__ float3 operator*(const float &a, const float3 &b) {
+  return make_float3(a * b.x, a * b.y, a * b.z);
+}
+
 __device__ float3 operator*(const float3 &a, float b) {
   return make_float3(a.x * b, a.y * b, a.z * b);
 }
@@ -248,7 +252,7 @@ __device__ Hit triangle_hit(Ray ray, Triangle triangle) {
 
   float3 normal = normalize(cross(ab, ac));
   if (det < 0.0f) {
-    normal = -normal;
+    normal = make_float3(-normal.x, -normal.y, -normal.z);
   }
   return Hit{t, false, normal, triangle.material};
 }
@@ -302,54 +306,55 @@ __global__ void trace_rays(View *view, curandState *rand_states,
         ray.origin = ray.origin + ray.dir * closest_hit.t;
         ray.color = ray.color * closest_hit.material.color;
 
-        if (closestHit.material.intensity > 0) {
-          ray.intensity = closestHit.material.intensity;
+        if (closest_hit.material.intensity > 0) {
+          ray.intensity = closest_hit.material.intensity;
           break;
         }
 
         float eta1;
         float eta2;
-        if (closestHit.internal) {
-          eta1 = closestHit.material.refractive_index;
+        if (closest_hit.internal) {
+          eta1 = closest_hit.material.refractive_index;
           eta2 = 1.0f;
         } else {
           eta1 = 1.0f;
-          eta2 = closestHit.material.refractive_index;
+          eta2 = closest_hit.material.refractive_index;
         }
         float ref_rat = eta1 / eta2;
         bool is_transmission =
-            check_transmission(closestHit.material.transparency, eta1, eta2,
-                               ray.dir, closestHit.normal, local_state);
+            check_transmission(closest_hit.material.transparency, eta1, eta2,
+                               ray.dir, closest_hit.normal, local_state);
         if (is_transmission) {
-          ray.origin += -100 * EPS * closestHit.normal;
-          ray.dir = refract_dir(ray.dir, closestHit.normal, closestHit.internal,
-                                ref_rat, closestHit.material.translucency, rng);
+          ray.origin = ray.origin - 100 * EPSILON * closest_hit.normal;
+          ray.dir = refract_dir(ray.dir, closest_hit.normal,
+                                closest_hit.internal, ref_rat,
+                                closest_hit.material.translucency, local_state);
         } else {
-          ray.dir = reflect(ray.dir, closestHit.normal,
-                            closestHit.material.reflectivity, rng);
+          ray.dir = reflect(ray.dir, closest_hit.normal,
+                            closest_hit.material.reflectivity, local_state);
         }
       } else {
         ray = add_environment(ray);
         break;
       }
     }
-    pixel += ray.color * ray.intensity;
+    pixel = pixel + ray.color * ray.intensity;
   }
 
   pixel = pixel / static_cast<float>(num_rays);
 
   if (accumulate) {
     if (iteration == 0) {
-      accumulation[id] = pixel;
+      accumulation[idx] = pixel;
     } else {
-      accumulation[id] += pixel;
+      accumulation[idx] = accumulation[idx] + pixel;
     }
 
-    packed_float3 avg = accumulation[id] / (iteration + 1);
-    out[id] = tone_map(avg, exposure);
+    packed_float3 avg = accumulation[idx] / (iteration + 1);
+    out[idx] = tone_map(avg, exposure);
 
   } else {
-    out[id] = tone_map(pixel, exposure);
+    out[idx] = tone_map(pixel, exposure);
   }
 }
 }
