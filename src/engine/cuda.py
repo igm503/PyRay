@@ -118,6 +118,7 @@ class CudaTracer:
                 True,
                 iteration,
             )
+        self.buffer_cache = {}
 
     def get_buffer(self, size, name, cache_data=None):
         if name in self.buffer_cache:

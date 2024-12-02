@@ -132,6 +132,7 @@ class MetalTracer:
                 True,
                 iteration,
             )
+        self.buffer_cache = {}
 
     def get_buffer(self, size, idx, shared=False, cache_data=None):
         if idx in self.buffer_cache:
