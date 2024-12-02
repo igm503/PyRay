@@ -37,7 +37,7 @@ class MetalTracer:
 
         self.buffer_cache = {}
 
-    def _render_iteration(
+    def render_iteration(
         self,
         view: "View",
         spheres: list["Sphere"],
@@ -78,15 +78,15 @@ class MetalTracer:
 
         num_pixels = view.width * view.height
         image_size = num_pixels * 3 * np.dtype(np.float32).itemsize
-        hdr_buffer = self.get_buffer(image_size, "hdr_accum", shared=True)
-        output_buffer = self.get_buffer(image_size, "output", shared=True)
+        accumulation_buffer = self.get_buffer(image_size, "accumulation", shared=True)
+        out_buffer = self.get_buffer(image_size, "out", shared=True)
 
-        buffers.extend([hdr_buffer, output_buffer])
+        buffers.extend([accumulation_buffer, out_buffer])
 
         self.run_kernel(num_pixels, buffers, self.trace_pipeline)
 
         output_array = (ctypes.c_float * (num_pixels * 3)).from_buffer(
-            output_buffer.contents().as_buffer(image_size)
+            out_buffer.contents().as_buffer(image_size)
         )
         img = np.frombuffer(output_array, dtype=np.float32)
         return img.reshape(view.height, view.width, 3).astype(np.uint8)
@@ -100,7 +100,7 @@ class MetalTracer:
         max_bounces: int,
         exposure: float,
     ):
-        return self._render_iteration(
+        return self.render_iteration(
             view,
             spheres,
             triangles,
@@ -122,7 +122,7 @@ class MetalTracer:
     ):
         self.buffer_cache = {}
         for iteration in range(num_iterations):
-            yield self._render_iteration(
+            yield self.render_iteration(
                 view,
                 spheres,
                 triangles,

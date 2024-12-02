@@ -2,9 +2,8 @@
 
 using namespace metal;
 
-constant float epsilon = 1e-6;
-
-constant float3 sky_color = float3(0.53, 0.81, 0.92);
+constant float EPS = 1e-6;
+constant float3 SKY_COLOR = float3(0.53, 0.81, 0.92);
 
 class SimpleRNG {
 private:
@@ -133,11 +132,13 @@ packed_float3 reflect(packed_float3 dir, packed_float3 normal,
   return normalize(mix(diffuse_dir, specular_dir, reflectivity));
 }
 
+packed_float3 tone_map(packed_float3 color, float exposure) {
+  return (1 - exp(-color * exposure)) * 255.0;
+}
+
 Ray add_environment(Ray ray) {
-  packed_float3 color;
-  color = sky_color;
   ray.intensity = 1.0;
-  ray.color = ray.color * color;
+  ray.color = ray.color * SKY_COLOR;
   return ray;
 }
 
@@ -153,23 +154,6 @@ Ray get_ray(constant View &view, uint base_id, thread SimpleRNG &rng) {
              packed_float3(1.0f, 1.0f, 1.0f), 0.0f};
 }
 
-Hit _sphere_hit(Ray ray, Sphere sphere) {
-  packed_float3 ray_offset_origin = ray.origin - sphere.center;
-  float b = 2 * dot(ray.dir, ray_offset_origin);
-  float c = length_squared(ray_offset_origin) - sphere.radius * sphere.radius;
-  float discriminant = b * b - 4 * c;
-  if (discriminant > 0) {
-    float t = (-b - sqrt(discriminant)) / 2.0f;
-    if (t > 0) {
-      return Hit{
-          t, false,
-          normalize((ray.origin + t * ray.dir - sphere.center) / sphere.radius),
-          sphere.material};
-    }
-  }
-  return NO_HIT;
-}
-
 Hit sphere_hit(Ray ray, Sphere sphere) {
   packed_float3 ray_offset_origin = ray.origin - sphere.center;
   float b = 2 * dot(ray.dir, ray_offset_origin);
@@ -183,10 +167,10 @@ Hit sphere_hit(Ray ray, Sphere sphere) {
 
     float t;
     bool internal;
-    if (t1 > epsilon) {
+    if (t1 > EPS) {
       t = t1;
       internal = false;
-    } else if (t2 > epsilon && sphere.material.transparency > 0.0f) {
+    } else if (t2 > EPS && sphere.material.transparency > 0.0f) {
       t = t2;
       internal = true;
     } else {
@@ -212,11 +196,11 @@ Hit triangle_hit(Ray ray, Triangle triangle) {
   float3 pvec = cross(ray.dir, ac);
   float det = dot(ab, pvec);
 
-  if (abs(det) < epsilon) {
+  if (abs(det) < EPS) {
     return NO_HIT;
   }
 
-  float inv_det = 1.0 / det;
+  float inv_det = 1.0 / (det + EPS);
   float3 tvec = ray.origin - triangle.v0;
   float u = dot(tvec, pvec) * inv_det;
   if (u < 0.0 || u > 1.0) {
@@ -230,7 +214,7 @@ Hit triangle_hit(Ray ray, Triangle triangle) {
   }
 
   float t = dot(ac, qvec) * inv_det;
-  if (t < 10 * epsilon) {
+  if (t < 10 * EPS) {
     return NO_HIT;
   }
 
@@ -252,9 +236,9 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
                        constant int &num_rays [[buffer(7)]],
                        constant float &exposure [[buffer(8)]],
                        constant bool &accumulate [[buffer(9)]],
-                       constant int &current_iteration [[buffer(10)]],
-                       device packed_float3 *hdr_accumulation [[buffer(11)]],
-                       device packed_float3 *output_image [[buffer(12)]],
+                       constant int &iteration [[buffer(10)]],
+                       device packed_float3 *accumulation [[buffer(11)]],
+                       device packed_float3 *out[[buffer(12)]],
                        uint id [[thread_position_in_grid]]) {
   SimpleRNG rng = SimpleRNG(seed, id * id);
 
@@ -299,6 +283,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
           ray.intensity = closestHit.material.intensity;
           break;
         }
+
         float eta1;
         float eta2;
         if (closestHit.internal) {
@@ -313,7 +298,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
             check_transmission(closestHit.material.transparency, eta1, eta2,
                                ray.dir, closestHit.normal, rng);
         if (is_transmission) {
-          ray.origin += -100 * epsilon * closestHit.normal;
+          ray.origin += -100 * EPS * closestHit.normal;
           ray.dir = refract_dir(ray.dir, closestHit.normal, closestHit.internal,
                                 ref_rat, closestHit.material.translucency, rng);
         } else {
@@ -330,18 +315,19 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
     pixel += ray.color * ray.intensity;
   }
 
-  pixel = pixel * exposure / num_rays;
+  pixel = pixel / num_rays;
 
   if (accumulate) {
-    if (current_iteration == 0) {
-      hdr_accumulation[id] = pixel;
+    if (iteration == 0) {
+      accumulation[id] = pixel;
     } else {
-      hdr_accumulation[id] = hdr_accumulation[id] + pixel;
+      accumulation[id] += pixel;
     }
 
-    packed_float3 avg = hdr_accumulation[id] / (current_iteration + 1);
-    output_image[id] = ((1 - exp(-avg)) * 255.0);
+    packed_float3 avg = accumulation[id] / (iteration + 1);
+    out[id] = tone_map(avg, exposure);
+
   } else {
-    output_image[id] = ((1 - exp(-pixel)) * 255.0);
+    out[id] = tone_map(pixel, exposure);
   }
 }
