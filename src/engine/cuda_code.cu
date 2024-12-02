@@ -206,17 +206,22 @@ __device__ Hit sphere_hit(Ray ray, Sphere sphere) {
 
     float t;
     bool internal;
-    if (t1 > 0) {
+    if (t1 > EPSILON) {
       t = t1;
-      internal = true;
-    } else if (t2 > 0) {
-      t = t2;
       internal = false;
+    } else if (t2 > EPSILON && sphere.material.transparency > 0.0f) {
+      t = t2;
+      internal = true;
     } else {
       return NO_HIT;
     }
 
-    float3 normal = normalize(ray.origin + ray.dir * t - sphere.center);
+    float3 hit_point = ray.origin + t * ray.dir;
+    float3 normal = normalize(hit_point - sphere.center);
+
+    if (internal) {
+      normal = make_float3(-normal.x, -normal.y, -normal.z);
+    }
     return Hit{t, internal, normal, sphere.material};
   }
   return NO_HIT;
@@ -269,7 +274,7 @@ __global__ void init_rand_state(curandState *states, int seed, int size) {
 __global__ void trace_rays(View *view, curandState *rand_states,
                            Sphere *spheres, Triangle *triangles,
                            int num_spheres, int num_triangles, int num_bounces,
-                           int num_rays, float exposure, bool accumulate,
+                           int num_rays, float exposure, int accumulate,
                            int iteration, float3 *accumulation, float3 *out) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx >= view->width * view->height)
@@ -343,14 +348,14 @@ __global__ void trace_rays(View *view, curandState *rand_states,
 
   pixel = pixel / static_cast<float>(num_rays);
 
-  if (accumulate) {
+  if (accumulate == 1) {
     if (iteration == 0) {
       accumulation[idx] = pixel;
     } else {
       accumulation[idx] = accumulation[idx] + pixel;
     }
 
-    packed_float3 avg = accumulation[idx] / (iteration + 1);
+    float3 avg = accumulation[idx] / (iteration + 1);
     out[idx] = tone_map(avg, exposure);
 
   } else {

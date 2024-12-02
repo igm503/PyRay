@@ -155,9 +155,9 @@ Ray get_ray(constant View &view, uint base_id, thread SimpleRNG &rng) {
 }
 
 Hit sphere_hit(Ray ray, Sphere sphere) {
-  packed_float3 ray_offset_origin = ray.origin - sphere.center;
-  float b = 2 * dot(ray.dir, ray_offset_origin);
-  float c = length_squared(ray_offset_origin) - sphere.radius * sphere.radius;
+  packed_float3 offset = ray.origin - sphere.center;
+  float b = 2 * dot(ray.dir, offset);
+  float c = length_squared(offset) - sphere.radius * sphere.radius;
   float discriminant = b * b - 4 * c;
 
   if (discriminant > 0) {
@@ -238,7 +238,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
                        constant bool &accumulate [[buffer(9)]],
                        constant int &iteration [[buffer(10)]],
                        device packed_float3 *accumulation [[buffer(11)]],
-                       device packed_float3 *out[[buffer(12)]],
+                       device packed_float3 *out [[buffer(12)]],
                        uint id [[thread_position_in_grid]]) {
   SimpleRNG rng = SimpleRNG(seed, id * id);
 

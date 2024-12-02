@@ -65,7 +65,7 @@ class CudaTracer:
             np.int32(max_bounces),
             np.int32(num_rays),
             np.float32(exposure),
-            np.bool_(accumulate),
+            np.int32(accumulate),
             np.int32(iteration),
             accumulation_buffer,
             out_buffer,
