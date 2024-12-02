@@ -1,6 +1,6 @@
 view:
-  origin: [-50, -20.0, 6]
-  dir: [-1.0, -0.4, -0.0]
+  origin: [-52.5, 8.0, 3]
+  dir: [0.0, -1.0, -0.0]
   fov: 70
   exposure: 2.0
   num_samples: 10
@@ -171,7 +171,7 @@ surfaces:
 
 
   - type: sphere
-    center: [-49.5, -8.2, 5]
+    center: [-49.5, -8.2, 3]
     radius: 1
     material:
       color: [1.0, 1.0, 1.0]
@@ -181,7 +181,7 @@ surfaces:
       translucency: 0.00
 
   - type: sphere
-    center: [-52.5, -8.2, 5]
+    center: [-52.5, -8.2, 3]
     radius: 1
     material:
       color: [1.0, 1.0, 1.0]
@@ -191,7 +191,7 @@ surfaces:
       translucency: 0.00
 
   - type: sphere
-    center: [-55.5, -8.2, 5]
+    center: [-55.5, -8.2, 3]
     radius: 1
     material:
       color: [1.0, 1.0, 1.0]
@@ -201,28 +201,28 @@ surfaces:
       translucency: 0.00
 
   - type: sphere
-    center: [-48.0, -6.0, 4]
+    center: [-48.0, -6.0, 2]
     radius: 1
     material:
       color: [1.0, 0.9, 0.9]
       reflectivity: 1.0
       
   - type: sphere
-    center: [-51.0, -6.0, 4]
+    center: [-51.0, -6.0, 2]
     radius: 1
     material:
       color: [1.0, 0.9, 0.9]
       reflectivity: 0.9
 
   - type: sphere
-    center: [-54.0, -6.0, 4]
+    center: [-54.0, -6.0, 2]
     radius: 1
     material:
       color: [1.0, 0.7, 0.8]
       reflectivity: 0.0
 
   - type: sphere
-    center: [-57.0, -6.0, 4]
+    center: [-57.0, -6.0, 2]
     radius: 1
     material:
       color: [1.0, 0.7, 0.8]
@@ -231,11 +231,61 @@ surfaces:
       refractive_index: 2.0
 
   - type: sphere
-    center: [-57.0, -6.0, 4]
+    center: [-57.0, -6.0, 2]
     radius: .2
     material:
       color: [1.0, 1.0, 0.4]
       luminance: 5.0
+
+  - type: sphere
+    center: [-46.5, -3.8, 1.2]
+    radius: 1
+    material:
+      color: [1.0, 1.0, 1.0]
+      reflectivity: 0.9
+      transparency: 0.9
+      refractive_index: 1.5
+      translucency: 0.00
+
+  - type: sphere
+    center: [-49.5, -3.8, 1.5]
+    radius: 1
+    material:
+      color: [1.0, 1.0, 1.0]
+      reflectivity: 0.9
+      transparency: 0.9
+      refractive_index: 1.5
+      translucency: 0.00
+
+  - type: sphere
+    center: [-52.5, -3.8, 1.75]
+    radius: 1
+    material:
+      color: [1.0, 1.0, 1.0]
+      reflectivity: 0.9
+      transparency: 0.9
+      refractive_index: 1.5
+      translucency: 0.00
+
+  - type: sphere
+    center: [-55.5, -3.8, 1.9]
+    radius: 1
+    material:
+      color: [1.0, 1.0, 1.0]
+      reflectivity: 0.9
+      transparency: 0.9
+      refractive_index: 1.5
+      translucency: 0.00
+
+  - type: sphere
+    center: [-58.5, -3.8, 2.2]
+    radius: 1
+    material:
+      color: [1.0, 1.0, 1.0]
+      reflectivity: 0.9
+      transparency: 0.9
+      refractive_index: 1.5
+      translucency: 0.00
 
   # sun
   - type: sphere
