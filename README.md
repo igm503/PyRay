@@ -95,26 +95,30 @@ surfaces:                            # list of objects in scene
       - [-15000.0, 15000, -0]
     material:                        
       color: [0, 0.5, 0]             # RGB with range [0, 1]
-      reflectivity: 0.0              # range [0, 1] with 0 being diffuse and 1 mirror-like
-      luminance: 0.0                 # how much light the object emits
+      reflectivity: 0.0              # range [0, 1] with 0 being diffuse and 1 mirror-like (default 0)
+      transparency: 0.0              # range [0, 1] with 0 being opaque and 1 perfectly transparent
+      refractive_index: 1.0          # index of refraction (default 1.0; only relevant for transparent objects)
+      translucency: 0.00             # 0.0 is clear; higher values (> 0.02) becoming very foggy (only relevant for transparent objects)
+      luminance: 0.0                 # how much light the object emits (default 0)
+
 
   - type: sphere
     center: [700.0, 500.0, -200]     # center point of sphere
     radius: 500
-    material:
+    material:                        # material properties options are the same for spheres and triangles
       color: [0.7, 0, 0.5]
-      reflectivity: 0.02
-      luminance: 0.1
+      transparency: 0.9
+      refractive_index: 1.1
+      translucency: 0.00
 
     ...                              
 
   - type: sphere
-    center: [700.0, 500.0, -200]    
+    center: [700.0, 500.0, 200]    
     radius: 500
     material:
       color: [0.7, 0, 0.5]
-      reflectivity: 0.02
-      luminance: 0.1
+      reflectivity: 1.0
 
 ```
 Render your scene with
