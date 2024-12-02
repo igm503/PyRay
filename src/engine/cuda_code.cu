@@ -28,6 +28,9 @@ struct Material {
   float3 color;
   float intensity;
   float reflectivity;
+  float transparency;
+  float translucency;
+  float refractive_index;
 };
 
 struct Sphere {
@@ -45,11 +48,14 @@ struct Triangle {
 
 struct Hit {
   float t;
+  bool internal;
   float3 normal;
   Material material;
 };
 
-__constant__ Hit NO_HIT = {INFINITY, {0, 0, 0}, {{0, 0, 0}, 0.0f, 0.0f}};
+__constant__ Hit NO_HIT = {INFINITY, false, {0, 0, 0}, {{0, 0, 0}, 0.0f, 0.0f}};
+
+// vector math
 
 __device__ float3 operator+(const float3 &a, const float3 &b) {
   return make_float3(a.x + b.x, a.y + b.y, a.z + b.z);
@@ -85,12 +91,28 @@ __device__ float3 normalize(float3 v) {
   return v / len;
 }
 
-__device__ bool check_specular(float reflectivity, curandState *state) {
-  return curand_uniform(state) < reflectivity;
+__device__ float3 lerp(const float3 &a, const float3 &b, const float &w) {
+  return a * (1.0f - w) + b * w;
 }
 
-__device__ float3 reflect_dir(float3 dir, float3 normal) {
-  return dir - normal * (2.0f * dot(dir, normal));
+// reflection functions
+
+__device__ float schlick_fresnel(float cosine, float eta1, float eta2) {
+  float r0 = (eta1 - eta2) / (eta1 + eta2);
+  r0 = r0 * r0;
+  return r0 + (1.0f - r0) * pow((1.0f - cosine), 5.0f);
+}
+
+__device__ bool check_transmission(float transparency, float eta1, float eta2,
+                                   float3 dir, float3 normal,
+                                   curandState *state) {
+  if (transparency <= 0.0f) {
+    return false;
+  }
+  float fresnel = schlick_fresnel(abs(dot(dir, normal)), eta1, eta2);
+  float reflection_prob = fresnel * (1.0f - transparency);
+
+  return curand_uniform(state) < reflection_prob;
 }
 
 __device__ float3 rand_dir(float3 normal, curandState *state) {
@@ -100,7 +122,7 @@ __device__ float3 rand_dir(float3 normal, curandState *state) {
   return normalize(normal + make_float3(r1, r2, r3));
 }
 
-__device__ float3 diffuse_dir(float3 normal, curandState *state) {
+__device__ float3 reflect_diffuse(float3 normal, curandState *state) {
   float3 random_dir = rand_dir(normal, state);
   if (dot(random_dir, normal) < 0) {
     random_dir = make_float3(-random_dir.x, -random_dir.y, -random_dir.z);
@@ -108,35 +130,90 @@ __device__ float3 diffuse_dir(float3 normal, curandState *state) {
   return random_dir;
 }
 
-__device__ Ray add_environment(Ray ray) {
-  float3 color;
-  if (ray.dir.z > 0.98f) {
-    float scale = (ray.dir.z - 0.98f) / 0.02f;
-    color = WHITE * scale + SUN_COLOR * (1.0f - scale);
-    ray.intensity += 1.0f;
-  } else {
-    color = SKY_COLOR;
-    ray.intensity += 0.5f;
+__device__ float3 reflect_specular(float3 dir, float3 normal) {
+  return dir - normal * (2.0f * dot(dir, normal));
+}
+
+__device__ float3 refract_dir(float3 dir, float3 normal, bool internal,
+                              float ref_rat, float translucency,
+                              curandState *state) {
+
+  dir = normalize(dir);
+  normal = normalize(normal);
+
+  float cos_i = dot(normal, dir);
+
+  float cos_t_squared = 1.0f - ref_rat * ref_rat * (1.0f - cos_i * cos_i);
+
+  if (cos_t_squared < 0.0f) {
+    return reflect_specular(dir, normal);
   }
-  ray.color = ray.color * color;
+
+  float3 refracted_dir = normalize(
+      ref_rat * dir + (ref_rat * cos_i - sqrt(cos_t_squared)) * normal);
+  float3 diffuse_dir = reflect_diffuse(normal, state);
+
+  return normalize(lerp(refracted_dir, diffuse_dir, translucency));
+}
+
+__device__ float3 reflect(float3 dir, float3 normal, float reflectivity,
+                          curandState *state) {
+  float3 diffuse_dir = reflect_diffuse(normal, state);
+  float3 specular_dir = reflect_specular(dir, normal);
+  return normalize(lerp(diffuse_dir, specular_dir, reflectivity));
+}
+
+__device__ float3 tone_map(float3 color, float exposure) {
+  float3 ldr;
+  ldr.x = (1.0f - expf(-color.x * exposure)) * 255.0f;
+  ldr.y = (1.0f - expf(-color.y * exposure)) * 255.0f;
+  ldr.z = (1.0f - expf(-color.z * exposure)) * 255.0f;
+  return ldr;
+}
+
+__device__ Ray add_environment(Ray ray) {
+  ray.intensity = 0.5f;
+  ray.color = ray.color * SKY_COLOR;
   return ray;
 }
 
+__device__ Ray get_ray(const View view, int idx, curandState *state) {
+  float x_offset =
+      static_cast<float>(idx % view.width) + 3 * curand_uniform(state) - 1.5f;
+  float y_offset =
+      static_cast<float>(idx / view.width) + 3 * curand_uniform(state) - 1.5f;
+
+  return Ray{view.origin,
+             normalize(view.top_left_dir + view.right_dir * x_offset +
+                       view.down_dir * y_offset),
+             make_float3(1.0f, 1.0f, 1.0f), 0.0f};
+}
+
 __device__ Hit sphere_hit(Ray ray, Sphere sphere) {
-  float3 ray_offset_origin = ray.origin - sphere.center;
-  float b = 2.0f * dot(ray.dir, ray_offset_origin);
-  float c =
-      dot(ray_offset_origin, ray_offset_origin) - sphere.radius * sphere.radius;
+  float3 offset = ray.origin - sphere.center;
+  float b = 2.0f * dot(ray.dir, offset);
+  float c = dot(offset, offset) - sphere.radius * sphere.radius;
   float discriminant = b * b - 4.0f * c;
 
   if (discriminant > 0) {
-    float t = (-b - sqrtf(discriminant)) / 2.0f;
-    if (t > 0) {
-      return Hit{
-          t,
-          normalize((ray.origin + ray.dir * t - sphere.center) / sphere.radius),
-          sphere.material};
+    float sqrt_d = sqrtf(discriminant);
+    float t1 = (-b - sqrt_d) / 2.0f;
+    float t2 = (-b + sqrt_d) / 2.0f;
+
+    float t;
+    bool internal;
+    if (t1 > 0) {
+      t = t1;
+      internal = true;
+    } else if (t2 > 0) {
+      t = t2;
+      internal = false;
+    } else {
+      return NO_HIT;
     }
+
+    float3 normal = normalize(ray.origin + ray.dir * t - sphere.center);
+    return Hit{t, internal, normal, sphere.material};
   }
   return NO_HIT;
 }
@@ -154,14 +231,12 @@ __device__ Hit triangle_hit(Ray ray, Triangle triangle) {
   float inv_det = 1.0f / (det + EPSILON);
   float3 tvec = ray.origin - triangle.v0;
   float u = dot(tvec, pvec) * inv_det;
-
   if (u < 0.0f || u > 1.0f) {
     return NO_HIT;
   }
 
   float3 qvec = cross(tvec, ab);
   float v = dot(ray.dir, qvec) * inv_det;
-
   if (v < 0.0f || u + v > 1.0f) {
     return NO_HIT;
   }
@@ -171,22 +246,11 @@ __device__ Hit triangle_hit(Ray ray, Triangle triangle) {
     return NO_HIT;
   }
 
-  return Hit{t, normalize(cross(ab, ac)), triangle.material};
-}
-
-__device__ Ray get_ray(const View view, int idx, curandState *state) {
-  float x_offset =
-      static_cast<float>(idx % view.width) + curand_uniform(state) - 0.5f;
-  float y_offset =
-      static_cast<float>(idx / view.width) + curand_uniform(state) - 0.5f;
-
-  Ray ray;
-  ray.origin = view.origin;
-  ray.dir = normalize(view.top_left_dir + view.right_dir * x_offset +
-                      view.down_dir * y_offset);
-  ray.color = make_float3(1.0f, 1.0f, 1.0f);
-  ray.intensity = 0.0f;
-  return ray;
+  float3 normal = normalize(cross(ab, ac));
+  if (det < 0.0f) {
+    normal = -normal;
+  }
+  return Hit{t, false, normal, triangle.material};
 }
 
 extern "C" {
@@ -198,17 +262,18 @@ __global__ void init_rand_state(curandState *states, int seed, int size) {
   curand_init(seed, idx, 0, &states[idx]);
 }
 
-__global__ void trace_rays(View *view, Sphere *spheres, Triangle *triangles,
+__global__ void trace_rays(View *view, curandState *rand_states,
+                           Sphere *spheres, Triangle *triangles,
                            int num_spheres, int num_triangles, int num_bounces,
-                           int num_rays, float exposure,
-                           curandState *rand_states, float3 *image) {
+                           int num_rays, float exposure, bool accumulate,
+                           int iteration, float3 *accumulation, float3 *out) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx >= view->width * view->height)
     return;
 
   curandState *local_state = &rand_states[idx];
 
-  float3 pixel_color = make_float3(0.0f, 0.0f, 0.0f);
+  float3 pixel = make_float3(0.0f, 0.0f, 0.0f);
 
   for (int ray_num = 0; ray_num < num_rays; ray_num++) {
     Ray ray = get_ray(*view, idx, local_state);
@@ -233,29 +298,58 @@ __global__ void trace_rays(View *view, Sphere *spheres, Triangle *triangles,
       }
 
       if (closest_hit.t < INFINITY) {
+
         ray.origin = ray.origin + ray.dir * closest_hit.t;
-        if (check_specular(closest_hit.material.reflectivity, local_state)) {
-          ray.dir = reflect_dir(ray.dir, closest_hit.normal);
+        ray.color = ray.color * closest_hit.material.color;
+
+        if (closestHit.material.intensity > 0) {
+          ray.intensity = closestHit.material.intensity;
+          break;
+        }
+
+        float eta1;
+        float eta2;
+        if (closestHit.internal) {
+          eta1 = closestHit.material.refractive_index;
+          eta2 = 1.0f;
         } else {
-          ray.color = ray.color * closest_hit.material.color;
-          ray.intensity += closest_hit.material.intensity;
-          ray.dir = diffuse_dir(closest_hit.normal, local_state);
+          eta1 = 1.0f;
+          eta2 = closestHit.material.refractive_index;
+        }
+        float ref_rat = eta1 / eta2;
+        bool is_transmission =
+            check_transmission(closestHit.material.transparency, eta1, eta2,
+                               ray.dir, closestHit.normal, local_state);
+        if (is_transmission) {
+          ray.origin += -100 * EPS * closestHit.normal;
+          ray.dir = refract_dir(ray.dir, closestHit.normal, closestHit.internal,
+                                ref_rat, closestHit.material.translucency, rng);
+        } else {
+          ray.dir = reflect(ray.dir, closestHit.normal,
+                            closestHit.material.reflectivity, rng);
         }
       } else {
         ray = add_environment(ray);
         break;
       }
     }
-    pixel_color = pixel_color + ray.color * ray.intensity;
+    pixel += ray.color * ray.intensity;
   }
 
-  pixel_color = pixel_color / static_cast<float>(num_rays);
+  pixel = pixel / static_cast<float>(num_rays);
 
-  float3 ldr;
-  ldr.x = (1.0f - expf(-pixel_color.x * exposure)) * 255.0f;
-  ldr.y = (1.0f - expf(-pixel_color.y * exposure)) * 255.0f;
-  ldr.z = (1.0f - expf(-pixel_color.z * exposure)) * 255.0f;
+  if (accumulate) {
+    if (iteration == 0) {
+      accumulation[id] = pixel;
+    } else {
+      accumulation[id] += pixel;
+    }
 
-  image[idx] = ldr;
+    packed_float3 avg = accumulation[id] / (iteration + 1);
+    out[id] = tone_map(avg, exposure);
+
+  } else {
+    out[id] = tone_map(pixel, exposure);
+  }
 }
 }

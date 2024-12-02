@@ -24,6 +24,59 @@ class CudaTracer:
 
         self.buffer_cache = {}
 
+    def render_iteration(
+        self,
+        view: "View",
+        spheres: list["Sphere"],
+        triangles: list["Triangle"],
+        num_rays: int,
+        max_bounces: int,
+        exposure: float,
+        accumulate: bool,
+        iteration: int = 0,
+    ):
+        np_view, np_spheres, np_triangles = inputs_to_numpy(view, spheres, triangles)
+
+        num_pixels = view.width * view.height
+        block_size = 256
+        grid_size = (num_pixels + block_size - 1) // block_size
+
+        view_buffer = self.get_buffer(np_view.nbytes, "view")
+        cuda.memcpy_htod(view_buffer, np_view)
+
+        random_states = self.get_random_states(num_pixels, grid_size, block_size)
+
+        spheres_buffer = self.get_buffer(np_spheres.nbytes, "spheres", cache_data=np_spheres)
+        triangles_buffer = self.get_buffer(
+            np_triangles.nbytes, "triangles", cache_data=np_triangles
+        )
+
+        image_size = num_pixels * 3 * np.dtype(np.float32).itemsize
+        accumulation_buffer = self.get_buffer(image_size, "accumulation")
+        out_buffer = self.get_buffer(image_size, "out")
+
+        self.trace_rays_kernel(
+            view_buffer,
+            random_states,
+            spheres_buffer,
+            triangles_buffer,
+            np.int32(len(spheres)),
+            np.int32(len(triangles)),
+            np.int32(max_bounces),
+            np.int32(num_rays),
+            np.float32(exposure),
+            np.bool_(accumulate),
+            np.int32(iteration),
+            accumulation_buffer,
+            out_buffer,
+            block=(block_size, 1, 1),
+            grid=(grid_size, 1),
+        )
+
+        img = np.empty(num_pixels * 3, dtype=np.float32)
+        cuda.memcpy_dtoh(img, out_buffer)
+        return img.reshape(view.height, view.width, 3).astype(np.uint8)
+
     def render(
         self,
         view: "View",
@@ -33,49 +86,52 @@ class CudaTracer:
         max_bounces: int,
         exposure: float,
     ):
-        num_pixels = view.width * view.height
-        block_size = 256
-        grid_size = (num_pixels + block_size - 1) // block_size
-        np_view, np_spheres, np_triangles = inputs_to_numpy(view, spheres, triangles)
-
-        image_size = num_pixels * 3 * np.dtype(np.float32).itemsize
-        image_buffer = self.get_buffer(image_size, "image")
-        view_buffer = self.get_buffer(np_view.nbytes, "view")
-        spheres_buffer = self.get_buffer(np_spheres.nbytes, "spheres")
-        triangles_buffer = self.get_buffer(np_triangles.nbytes, "triangles")
-
-        random_states = self.get_random_states(num_pixels, grid_size, block_size)
-
-        cuda.memcpy_htod(view_buffer, np_view)
-        cuda.memcpy_htod(spheres_buffer, np_spheres)
-        cuda.memcpy_htod(triangles_buffer, np_triangles)
-
-        self.trace_rays_kernel(
-            view_buffer,
-            spheres_buffer,
-            triangles_buffer,
-            np.int32(len(spheres)),
-            np.int32(len(triangles)),
-            np.int32(max_bounces),
-            np.int32(num_rays),
-            np.float32(exposure),
-            random_states,
-            image_buffer,
-            block=(block_size, 1, 1),
-            grid=(grid_size, 1),
+        return self.render_iteration(
+            view,
+            spheres,
+            triangles,
+            num_rays,
+            max_bounces,
+            exposure,
+            False,
         )
 
-        result = np.empty(num_pixels * 3, dtype=np.float32)
-        cuda.memcpy_dtoh(result, image_buffer)
-        return result.reshape(view.height, view.width, 3).astype(np.uint8)
+    def cumulative_render(
+        self,
+        view: "View",
+        spheres: list["Sphere"],
+        triangles: list["Triangle"],
+        num_rays: int,
+        max_bounces: int,
+        exposure: float,
+        num_iterations: int,
+    ):
+        self.buffer_cache = {}
+        for iteration in range(num_iterations):
+            yield self.render_iteration(
+                view,
+                spheres,
+                triangles,
+                num_rays,
+                max_bounces,
+                exposure,
+                True,
+                iteration,
+            )
 
-    def get_buffer(self, size, name):
+    def get_buffer(self, size, name, cache_data=None):
         if name in self.buffer_cache:
             if size in self.buffer_cache[name]:
                 return self.buffer_cache[name][size]
-            del self.buffer_cache[name]
+            else:
+                del self.buffer_cache[name]
+        return self.create_buffer(size, name, cache_data=cache_data)
+
+    def create_buffer(self, size, name, cache_data=None):
         buffer = cuda.mem_alloc(size)
         self.buffer_cache[name] = {size: buffer}
+        if cache_data is not None:
+            cuda.memcpy_htod(buffer, cache_data)
         return buffer
 
     def get_random_states(self, num_pixels, grid_size, block_size):
