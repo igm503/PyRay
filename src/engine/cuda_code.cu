@@ -116,7 +116,7 @@ __device__ bool check_transmission(float transparency, float eta1, float eta2,
   float fresnel = schlick_fresnel(abs(dot(dir, normal)), eta1, eta2);
   float reflection_prob = fresnel * (1.0f - transparency);
 
-  return curand_uniform(state) < reflection_prob;
+  return curand_uniform(state) > reflection_prob;
 }
 
 __device__ float3 rand_dir(float3 normal, curandState *state) {
