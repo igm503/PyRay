@@ -42,6 +42,7 @@ class MetalTracer:
         view: "View",
         spheres: list["Sphere"],
         triangles: list["Triangle"],
+        surrounding_spheres: list[int],
         num_rays: int,
         max_bounces: int,
         exposure: float,
@@ -52,13 +53,21 @@ class MetalTracer:
 
         seed = np.random.randint(0, 2**16 - 1, dtype=np.int32)
 
+        num_surrounding = len(surrounding_spheres)
+        if not num_surrounding:
+            surrounding_spheres = [0]
+        np_surrounding = np.array(surrounding_spheres, dtype=np.int32)
+        np_surrounding = np.ascontiguousarray(np_surrounding)
+
         input_data = [
             (np_view, "view"),
             (seed, "seed"),
             (np_spheres, "spheres"),
             (np_triangles, "triangles"),
+            (np_surrounding, "surrounding_spheres"),
             (np.int32(len(np_spheres)), "num_spheres"),
             (np.int32(len(np_triangles)), "num_triangles"),
+            (np.int32(num_surrounding), "num_surrounding_spheres"),
             (np.int32(max_bounces), "max_bounces"),
             (np.int32(num_rays), "num_rays"),
             (np.float32(exposure), "exposure"),
@@ -70,7 +79,12 @@ class MetalTracer:
         for data, name in input_data:
             buffer_size = data.nbytes if hasattr(data, "nbytes") else data.itemsize
             buffer = self.get_buffer(buffer_size, name, cache_data=data)
-            if name in ["view", "seed"]:
+            if name in [
+                "view",
+                "seed",
+                "surrounding_spheres",
+                "num_surrounding_spheres",
+            ]:
                 self.load_buffer(buffer, data, buffer_size)
             elif name in "iteration" and accumulate:
                 self.load_buffer(buffer, data, buffer_size)
@@ -96,6 +110,7 @@ class MetalTracer:
         view: "View",
         spheres: list["Sphere"],
         triangles: list["Triangle"],
+        surrounding_spheres: list[int],
         num_rays: int,
         max_bounces: int,
         exposure: float,
@@ -104,6 +119,7 @@ class MetalTracer:
             view,
             spheres,
             triangles,
+            surrounding_spheres,
             num_rays,
             max_bounces,
             exposure,
@@ -115,6 +131,7 @@ class MetalTracer:
         view: "View",
         spheres: list["Sphere"],
         triangles: list["Triangle"],
+        surrounding_spheres: list[int],
         num_rays: int,
         max_bounces: int,
         exposure: float,
@@ -126,6 +143,7 @@ class MetalTracer:
                 view,
                 spheres,
                 triangles,
+                surrounding_spheres,
                 num_rays,
                 max_bounces,
                 exposure,
@@ -134,20 +152,20 @@ class MetalTracer:
             )
         self.buffer_cache = {}
 
-    def get_buffer(self, size, idx, shared=False, cache_data=None):
-        if idx in self.buffer_cache:
-            if size in self.buffer_cache[idx]:
-                return self.buffer_cache[idx][size]
+    def get_buffer(self, size, name, shared=False, cache_data=None):
+        if name in self.buffer_cache:
+            if size in self.buffer_cache[name]:
+                return self.buffer_cache[name][size]
             else:
-                del self.buffer_cache[idx]
-        return self.create_buffer(size, idx, shared, cache_data)
+                del self.buffer_cache[name]
+        return self.create_buffer(size, name, shared, cache_data)
 
-    def create_buffer(self, size, idx, shared=False, cache_data=None):
+    def create_buffer(self, size, name, shared=False, cache_data=None):
         mode = Metal.MTLResourceStorageModePrivate
         if shared:
             mode = Metal.MTLResourceStorageModeShared
         buffer = self.device.newBufferWithLength_options_(size, mode)
-        self.buffer_cache[idx] = {size: buffer}
+        self.buffer_cache[name] = {size: buffer}
         if cache_data is not None:
             self.load_buffer(buffer, cache_data, size)
         return buffer

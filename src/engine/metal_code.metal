@@ -4,6 +4,8 @@ using namespace metal;
 
 constant float EPS = 1e-6;
 constant float3 SKY_COLOR = float3(0.53, 0.81, 0.92);
+constant float AIR_REF_INDEX = 1.0;
+constant int MAX_STACK_SIZE = 8;
 
 class SimpleRNG {
 private:
@@ -21,6 +23,25 @@ public:
     // mean is 0; standard deviation is 1
     return sqrt(-2.0 * log(this->rand())) * sin(2.0 * M_PI_F * this->rand());
   }
+};
+
+template <typename T, int N> struct Stack {
+  T data[N];
+  int top = 0;
+
+  void push(thread T &item) {
+    if (top < N) {
+      data[top++] = item;
+    }
+  }
+
+  T pop() { return top > 0 ? data[--top] : T(); }
+
+  T peek() { return top > 0 ? data[top - 1] : T(); }
+
+  bool empty() { return top == 0; }
+
+  bool full() { return top == N; }
 };
 
 struct Ray {
@@ -110,10 +131,11 @@ packed_float3 reflect_specular(packed_float3 dir, packed_float3 normal) {
 }
 
 packed_float3 refract_dir(packed_float3 dir, packed_float3 normal,
-                          bool internal, float ref_rat, float translucency,
-                          thread SimpleRNG &rng) {
+                          bool internal, float eta1, float eta2,
+                          float translucency, thread SimpleRNG &rng) {
   float cos_i = dot(normal, dir);
 
+  float ref_rat = eta1 / eta2;
   float cos_t_squared = 1.0f - ref_rat * ref_rat * (1.0f - cos_i * cos_i);
 
   if (cos_t_squared < 0.0f) {
@@ -232,21 +254,38 @@ Hit triangle_hit(Ray ray, Triangle triangle) {
   return Hit{t, false, normal, triangle.material};
 }
 
+Stack<Material, MAX_STACK_SIZE>
+get_surrounding_media(const device Sphere *spheres,
+                      const device int *surrounding_spheres,
+                      constant int &num_surrounding_spheres) {
+  Stack<Material, MAX_STACK_SIZE> media_stack;
+  for (int i = num_surrounding_spheres - 1; i >= 0; i--) {
+    Material material = spheres[surrounding_spheres[i]].material;
+    media_stack.push(material);
+  }
+  return media_stack;
+}
+
 kernel void trace_rays(constant View &view [[buffer(0)]],
                        constant int &seed [[buffer(1)]],
                        const device Sphere *spheres [[buffer(2)]],
                        const device Triangle *triangles [[buffer(3)]],
-                       constant int &num_spheres [[buffer(4)]],
-                       constant int &num_triangles [[buffer(5)]],
-                       constant int &num_bounces [[buffer(6)]],
-                       constant int &num_rays [[buffer(7)]],
-                       constant float &exposure [[buffer(8)]],
-                       constant bool &accumulate [[buffer(9)]],
-                       constant int &iteration [[buffer(10)]],
-                       device packed_float3 *accumulation [[buffer(11)]],
-                       device packed_float3 *out [[buffer(12)]],
+                       const device int *surrounding_spheres [[buffer(4)]],
+                       constant int &num_spheres [[buffer(5)]],
+                       constant int &num_triangles [[buffer(6)]],
+                       constant int &num_surrounding_spheres [[buffer(7)]],
+                       constant int &num_bounces [[buffer(8)]],
+                       constant int &num_rays [[buffer(9)]],
+                       constant float &exposure [[buffer(10)]],
+                       constant bool &accumulate [[buffer(11)]],
+                       constant int &iteration [[buffer(12)]],
+                       device packed_float3 *accumulation [[buffer(13)]],
+                       device packed_float3 *out [[buffer(14)]],
                        uint id [[thread_position_in_grid]]) {
   SimpleRNG rng = SimpleRNG(seed, id * id);
+
+  Stack<Material, MAX_STACK_SIZE> _inside_stack = get_surrounding_media(
+      spheres, surrounding_spheres, num_surrounding_spheres);
 
   packed_float3 pixel = packed_float3(0.0f, 0.0f, 0.0f);
 
@@ -256,6 +295,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
     bool is_transmission = false;
     bool is_inside = false;
     Material inside_material;
+    Stack<Material, MAX_STACK_SIZE> inside_stack = _inside_stack;
     Ray ray = get_ray(view, id, rng);
 
     for (int bounce = 0; bounce < num_bounces; bounce++) {
@@ -278,25 +318,22 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
           closest_hit = hit;
         }
       }
+
       last_triangle_hit = -1;
       if (current_triangle_hit != -1) {
         last_triangle_hit = current_triangle_hit;
         current_triangle_hit = -1;
       }
+
       if (closest_hit.t < INFINITY) {
-
-        if (bounce == 0 && closest_hit.internal) {
-          is_inside = true;
-          inside_material = closest_hit.material;
-        }
-
-        ray.origin = ray.origin + closest_hit.t * ray.dir;
+        ray.origin = ray.origin + closest_hit.t * ray.dir -
+                     1000 * EPS * closest_hit.normal;
 
         bool hit_light = closest_hit.material.intensity > 0;
 
-        if (is_inside) {
-          ray.color =
-              attenuate(ray.color, closest_hit.t, inside_material.absorption);
+        if (not inside_stack.empty()) {
+          ray.color = attenuate(ray.color, closest_hit.t,
+                                inside_stack.peek().absorption);
         } else if (not hit_light) {
           ray.color = ray.color * closest_hit.material.color;
         }
@@ -309,31 +346,33 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
 
         float eta1;
         float eta2;
-        if (closest_hit.internal) {
+        if (closest_hit.internal && inside_stack.top == 1) {
           eta1 = closest_hit.material.refractive_index;
-          eta2 = 1.0f;
-        } else if (is_inside) {
-          eta1 = inside_material.refractive_index;
+          eta2 = AIR_REF_INDEX;
+        } else if (closest_hit.internal) {
+          eta1 = closest_hit.material.refractive_index;
+          eta2 = inside_stack.peek().refractive_index;
+        } else if (not inside_stack.empty()) {
+          eta1 = inside_stack.peek().refractive_index;
           eta2 = closest_hit.material.refractive_index;
         } else {
-          eta1 = 1.0f;
+          eta1 = AIR_REF_INDEX;
           eta2 = closest_hit.material.refractive_index;
         }
-        float ref_rat = eta1 / eta2;
+
         bool is_transmission =
             check_transmission(closest_hit.material.transparency, eta1, eta2,
                                ray.dir, closest_hit.normal, rng);
-        ray.origin += -1000 * EPS * closest_hit.normal;
+
         if (is_transmission) {
-          if (is_inside and closest_hit.internal) {
-            is_inside = false;
+          if (closest_hit.internal) {
+            inside_stack.pop();
           } else {
-            is_inside = true;
-            inside_material = closest_hit.material;
+            inside_stack.push(closest_hit.material);
           }
           ray.dir =
               refract_dir(ray.dir, closest_hit.normal, closest_hit.internal,
-                          ref_rat, closest_hit.material.translucency, rng);
+                          eta1, eta2, closest_hit.material.translucency, rng);
         } else {
           ray.dir = reflect(ray.dir, closest_hit.normal,
                             closest_hit.material.reflectivity, rng);

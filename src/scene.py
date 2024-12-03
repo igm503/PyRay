@@ -22,8 +22,19 @@ class Scene:
         exposure: float = 3.0,
         device: str = "cpu",
     ):
+        surrounding_media = self.get_surrounding_media(view, self.spheres)
+        if surrounding_media:
+            print(len(surrounding_media))
         engine = self.engine(device)
-        img = engine.render(view, self.spheres, self.triangles, num_rays, max_bounces, exposure)
+        img = engine.render(
+            view,
+            self.spheres,
+            self.triangles,
+            surrounding_media,
+            num_rays,
+            max_bounces,
+            exposure,
+        )
         return cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
     def cumulative_render(
@@ -44,6 +55,7 @@ class Scene:
             os.makedirs(path)
             save_dir = path
 
+        surrounding_media = self.get_surrounding_media(view, self.spheres)
         engine = self.engine(device)
         print(f"Rendering {num_rays} rays. Will save to {save_dir}")
         rays_per_frame = 100
@@ -55,6 +67,7 @@ class Scene:
                     view,
                     self.spheres,
                     self.triangles,
+                    surrounding_media,
                     rays_per_frame,
                     max_bounces,
                     exposure,
@@ -76,3 +89,13 @@ class Scene:
         if not hasattr(self, device):
             setattr(self, device, get_engine(device))
         return getattr(self, device)
+
+    def get_surrounding_media(self, view: View, spheres: list[Sphere]):
+        surrounding_spheres = {}
+        for i, sphere in enumerate(spheres):
+            v_center_offset = view.origin - sphere.center
+            center_offset = np.linalg.norm(v_center_offset)
+            if center_offset < sphere.radius:
+                surrounding_spheres[sphere.radius - center_offset] = i
+
+        return [surrounding_spheres[key] for key in sorted(surrounding_spheres)]
