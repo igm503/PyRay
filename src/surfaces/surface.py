@@ -13,12 +13,13 @@ if TYPE_CHECKING:
 class Material:
     def __init__(
         self,
-        color: list,
+        color: list = [1, 1, 1],
         reflectivity: float = 0,
         luminance: float = 0,
         transparency: float = 0,
         translucency: float = 0,
         refractive_index: float = 1,
+        absorption: list = [0.1, 0.1, 0.1],
     ):
         self.color = np.array(color)
         self.reflectivity = reflectivity
@@ -26,6 +27,7 @@ class Material:
         self.transparency = transparency
         self.translucency = translucency
         self.refractive_index = refractive_index
+        self.absorption = absorption
 
     def to_numpy(self):
         return np.array(
@@ -36,6 +38,7 @@ class Material:
                 self.transparency,
                 self.translucency,
                 self.refractive_index,
+                self.absorption
             ),
             dtype=GPUTypes.material_dtype,
         )

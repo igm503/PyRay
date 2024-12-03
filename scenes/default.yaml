@@ -3,8 +3,8 @@ view:
   dir: [0.0, -1.0, -0.0]
   fov: 70
   exposure: 2.0
-  num_samples: 10
-  max_bounces: 100
+  num_samples: 50
+  max_bounces: 200
   render_resolution: [1280, 720]
   display_resolution: [2560, 1440]
 
@@ -12,8 +12,8 @@ view:
 save_render:
   save_path: renders/default
   exposure: 2.0
-  num_samples: 100_000
-  max_bounces: 1_000
+  num_samples: 1_000
+  max_bounces: 500
   resolution: [3840, 2160]
 
 surfaces:
@@ -225,16 +225,34 @@ surfaces:
     center: [-57.0, -6.0, 2]
     radius: 1
     material:
-      color: [1.0, 0.7, 0.8]
+      color: [1.0, 1.0, 1.0]
       transparency: 1.0
       translucency: 0.05
       refractive_index: 2.0
+      absorption: [0.20, 0.3, 0.0]
 
   - type: sphere
     center: [-57.0, -6.0, 2]
     radius: .2
     material:
-      color: [1.0, 1.0, 0.4]
+      color: [1.0, 0.6, 0.3]
+      luminance: 5.0
+
+  - type: sphere
+    center: [-57.0, -6.0, 5]
+    radius: 1
+    material:
+      color: [1.0, 1.0, 1.0]
+      transparency: 1.0
+      translucency: 0.05
+      refractive_index: 2.0
+      absorption: [0.20, 0.3, 0.0]
+
+  - type: sphere
+    center: [-57.0, -6.0, 7]
+    radius: .2
+    material:
+      color: [1.0, 0.6, 0.3]
       luminance: 5.0
 
   - type: sphere
@@ -263,7 +281,7 @@ surfaces:
     material:
       color: [1.0, 1.0, 1.0]
       reflectivity: 0.9
-      transparency: 0.9
+      transparency: 9.9
       refractive_index: 1.5
       translucency: 0.00
 
@@ -283,10 +301,21 @@ surfaces:
     material:
       color: [1.0, 1.0, 1.0]
       reflectivity: 0.9
-      transparency: 0.9
+      transparency: 0.1
       refractive_index: 1.5
       translucency: 0.00
+      absorption: [0.1, 0.1, 0.1]
 
+  - type: sphere
+    center: [-58.5, -30.8, 10.2]
+    radius: 10
+    material:
+      color: [1.0, 1.0, 1.0]
+      reflectivity: 0.9
+      transparency: 0.1
+      refractive_index: 1.5
+      translucency: 0.00
+      absorption: [0.02, 0.02, 0.02]
   # sun
   - type: sphere
     center: [-30000.0, 50000.0, 100000.0]

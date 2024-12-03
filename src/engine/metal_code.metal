@@ -46,6 +46,7 @@ struct Material {
   float transparency;
   float translucency;
   float refractive_index;
+  packed_float3 absorption;
 };
 
 struct Sphere {
@@ -84,8 +85,8 @@ bool check_transmission(float transparency, float eta1, float eta2,
   if (transparency <= 0.0f) {
     return false;
   }
-  float fresnel = schlick_fresnel(abs(dot(dir, normal)), eta1, eta2);
-  float reflection_prob = fresnel * (1 - transparency);
+  float fresnel_approx = schlick_fresnel(abs(dot(dir, normal)), eta1, eta2);
+  float reflection_prob = fresnel_approx;
 
   return rng.rand() > reflection_prob;
 }
@@ -130,6 +131,11 @@ packed_float3 reflect(packed_float3 dir, packed_float3 normal,
   packed_float3 diffuse_dir = reflect_diffuse(normal, rng);
   packed_float3 specular_dir = reflect_specular(dir, normal);
   return normalize(mix(diffuse_dir, specular_dir, reflectivity));
+}
+
+packed_float3 attenuate(packed_float3 color, float t,
+                        packed_float3 absorption) {
+  return color * exp(-t * tan(M_PI_F / 2 * absorption));
 }
 
 packed_float3 tone_map(packed_float3 color, float exposure) {
@@ -247,15 +253,18 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
   for (int ray_num = 0; ray_num < num_rays; ray_num++) {
     int last_triangle_hit = -1;
     int current_triangle_hit = -1;
+    bool is_transmission = false;
+    bool is_inside = false;
+    Material inside_material;
     Ray ray = get_ray(view, id, rng);
 
     for (int bounce = 0; bounce < num_bounces; bounce++) {
-      Hit closestHit = NO_HIT;
+      Hit closest_hit = NO_HIT;
 
       for (int sphere_id = 0; sphere_id < num_spheres; sphere_id++) {
         Hit hit = sphere_hit(ray, spheres[sphere_id]);
-        if (hit.t < closestHit.t) {
-          closestHit = hit;
+        if (hit.t < closest_hit.t) {
+          closest_hit = hit;
         }
       }
 
@@ -264,9 +273,9 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
           continue;
         }
         Hit hit = triangle_hit(ray, triangles[triangle_id]);
-        if (hit.t < closestHit.t) {
+        if (hit.t < closest_hit.t) {
           current_triangle_hit = triangle_id;
-          closestHit = hit;
+          closest_hit = hit;
         }
       }
       last_triangle_hit = -1;
@@ -274,36 +283,60 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
         last_triangle_hit = current_triangle_hit;
         current_triangle_hit = -1;
       }
-      if (closestHit.t < INFINITY) {
+      if (closest_hit.t < INFINITY) {
 
-        ray.origin = ray.origin + closestHit.t * ray.dir;
-        ray.color = ray.color * closestHit.material.color;
+        if (bounce == 0 && closest_hit.internal) {
+          is_inside = true;
+          inside_material = closest_hit.material;
+        }
 
-        if (closestHit.material.intensity > 0) {
-          ray.intensity = closestHit.material.intensity;
+        ray.origin = ray.origin + closest_hit.t * ray.dir;
+
+        bool hit_light = closest_hit.material.intensity > 0;
+
+        if (is_inside) {
+          ray.color =
+              attenuate(ray.color, closest_hit.t, inside_material.absorption);
+        } else if (not hit_light) {
+          ray.color = ray.color * closest_hit.material.color;
+        }
+
+        if (hit_light) {
+          ray.color = ray.color * closest_hit.material.color;
+          ray.intensity = closest_hit.material.intensity;
           break;
         }
 
         float eta1;
         float eta2;
-        if (closestHit.internal) {
-          eta1 = closestHit.material.refractive_index;
+        if (closest_hit.internal) {
+          eta1 = closest_hit.material.refractive_index;
           eta2 = 1.0f;
+        } else if (is_inside) {
+          eta1 = inside_material.refractive_index;
+          eta2 = closest_hit.material.refractive_index;
         } else {
           eta1 = 1.0f;
-          eta2 = closestHit.material.refractive_index;
+          eta2 = closest_hit.material.refractive_index;
         }
         float ref_rat = eta1 / eta2;
         bool is_transmission =
-            check_transmission(closestHit.material.transparency, eta1, eta2,
-                               ray.dir, closestHit.normal, rng);
+            check_transmission(closest_hit.material.transparency, eta1, eta2,
+                               ray.dir, closest_hit.normal, rng);
+        ray.origin += -1000 * EPS * closest_hit.normal;
         if (is_transmission) {
-          ray.origin += -100 * EPS * closestHit.normal;
-          ray.dir = refract_dir(ray.dir, closestHit.normal, closestHit.internal,
-                                ref_rat, closestHit.material.translucency, rng);
+          if (is_inside and closest_hit.internal) {
+            is_inside = false;
+          } else {
+            is_inside = true;
+            inside_material = closest_hit.material;
+          }
+          ray.dir =
+              refract_dir(ray.dir, closest_hit.normal, closest_hit.internal,
+                          ref_rat, closest_hit.material.translucency, rng);
         } else {
-          ray.dir = reflect(ray.dir, closestHit.normal,
-                            closestHit.material.reflectivity, rng);
+          ray.dir = reflect(ray.dir, closest_hit.normal,
+                            closest_hit.material.reflectivity, rng);
         }
 
       } else {
