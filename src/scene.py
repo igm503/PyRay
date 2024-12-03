@@ -23,8 +23,6 @@ class Scene:
         device: str = "cpu",
     ):
         surrounding_media = self.get_surrounding_media(view, self.spheres)
-        if surrounding_media:
-            print(len(surrounding_media))
         engine = self.engine(device)
         img = engine.render(
             view,

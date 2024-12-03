@@ -1,4 +1,3 @@
 - diffuse reflection absorption
 - simulating specular diffuse combo via layers (schlick reflection at top, diffusion for light that passes through)
 - wavelength dependent refraction
-- why can i see from inside opaque spheres

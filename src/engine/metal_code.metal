@@ -198,7 +198,7 @@ Hit sphere_hit(Ray ray, Sphere sphere) {
     if (t1 > EPS) {
       t = t1;
       internal = false;
-    } else if (t2 > EPS && sphere.material.transparency > 0.0f) {
+    } else if (t2 > EPS) {
       t = t2;
       internal = true;
     } else {
@@ -326,8 +326,9 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
       }
 
       if (closest_hit.t < INFINITY) {
-        ray.origin = ray.origin + closest_hit.t * ray.dir -
-                     1000 * EPS * closest_hit.normal;
+        if (closest_hit.internal && closest_hit.material.transparency == 0.0f) {
+          break;
+        }
 
         bool hit_light = closest_hit.material.intensity > 0;
 
@@ -365,6 +366,8 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
                                ray.dir, closest_hit.normal, rng);
 
         if (is_transmission) {
+          ray.origin = ray.origin + closest_hit.t * ray.dir -
+                       1000 * EPS * closest_hit.normal;
           if (closest_hit.internal) {
             inside_stack.pop();
           } else {
@@ -374,6 +377,8 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
               refract_dir(ray.dir, closest_hit.normal, closest_hit.internal,
                           eta1, eta2, closest_hit.material.translucency, rng);
         } else {
+          ray.origin = ray.origin + closest_hit.t * ray.dir +
+                       1000 * EPS * closest_hit.normal;
           ray.dir = reflect(ray.dir, closest_hit.normal,
                             closest_hit.material.reflectivity, rng);
         }
