@@ -1,4 +1,2 @@
-- diffuse reflection absorption
-- simulating specular diffuse combo via layers (schlick reflection at top, diffusion for light that passes through)
 - wavelength dependent refraction
-- get rid of triangle hit checking
+- making objects out of triangles (where the union of the triangles constitutes the surface of one object with a single set of properties, like transparency and absorption)

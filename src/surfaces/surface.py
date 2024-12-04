@@ -17,7 +17,7 @@ class Material:
         luminance: float = 0.0,
         reflectivity: float = 0.0,
         glossy: bool = False,
-        gloss_refractive_index: float = 0.0,
+        gloss_refractive_index: float = 1.0,
         gloss_translucency: float = 0.0,
         transparent: bool = False,
         refractive_index: float = 1.0,

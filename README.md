@@ -103,7 +103,7 @@ surfaces:                            # list of objects in scene
       translucency: 0.00             # 0.0 is clear; higher values (> 0.02) becoming very foggy (only relevant for transparent objects)
       absorption: [0.0, 0.0, 0.0]    # exponential absorption rate of RBG light as it passes through material (only relevant for transparent objects)
       # GLOSSINESS
-      gloss: false                   # bool whether the object is glossy (only relevant for non-transparent objects)
+      glossy: false                   # bool whether the object is glossy (only relevant for non-transparent objects)
       gloss_refractive_index: 1.0    # index of refraction (default 1.0; only relevant for glossy objects)
       gloss_translucency: 0.00       # float [0, 1] controls gloss reflections, similar to reflectivity (only relevant for glossy objects)
 
