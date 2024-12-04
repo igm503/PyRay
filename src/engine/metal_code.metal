@@ -64,10 +64,13 @@ struct Material {
   packed_float3 color;
   float intensity;
   float reflectivity;
-  float transparency;
-  float translucency;
+  int transparent;
   float refractive_index;
+  float translucency;
   packed_float3 absorption;
+  int glossy;
+  float gloss_refractive_index;
+  float gloss_translucency;
 };
 
 struct Sphere {
@@ -100,12 +103,8 @@ float schlick_fresnel(float cosine, float eta1, float eta2) {
   return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
-bool check_transmission(float transparency, float eta1, float eta2,
-                        packed_float3 dir, packed_float3 normal,
-                        thread SimpleRNG &rng) {
-  if (transparency <= 0.0f) {
-    return false;
-  }
+bool check_transmission(float eta1, float eta2, packed_float3 dir,
+                        packed_float3 normal, thread SimpleRNG &rng) {
   float fresnel_approx = schlick_fresnel(abs(dot(dir, normal)), eta1, eta2);
 
   return rng.rand() > fresnel_approx;
@@ -289,8 +288,6 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
   packed_float3 pixel = packed_float3(0.0f, 0.0f, 0.0f);
 
   for (int ray_num = 0; ray_num < num_rays; ray_num++) {
-    int last_triangle_hit = -1;
-    int current_triangle_hit = -1;
     bool is_transmission = false;
     bool is_inside = false;
     Material inside_material;
@@ -308,24 +305,14 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
       }
 
       for (int triangle_id = 0; triangle_id < num_triangles; triangle_id++) {
-        if (triangle_id == last_triangle_hit) {
-          continue;
-        }
         Hit hit = triangle_hit(ray, triangles[triangle_id]);
         if (hit.t < closest_hit.t) {
-          current_triangle_hit = triangle_id;
           closest_hit = hit;
         }
       }
 
-      last_triangle_hit = -1;
-      if (current_triangle_hit != -1) {
-        last_triangle_hit = current_triangle_hit;
-        current_triangle_hit = -1;
-      }
-
       if (closest_hit.t < INFINITY) {
-        if (closest_hit.internal && closest_hit.material.transparency == 0.0f) {
+        if (closest_hit.internal && closest_hit.material.transparent == 0) {
           break;
         }
 
@@ -334,8 +321,6 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
         if (not inside_stack.empty()) {
           ray.color = attenuate(ray.color, closest_hit.t,
                                 inside_stack.peek().absorption);
-        } else if (not hit_light) {
-          ray.color = ray.color * closest_hit.material.color;
         }
 
         if (hit_light) {
@@ -344,44 +329,61 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
           break;
         }
 
-        float eta1;
-        float eta2;
-        if (closest_hit.internal && inside_stack.top == 1) {
-          eta1 = closest_hit.material.refractive_index;
-          eta2 = AIR_REF_INDEX;
-        } else if (closest_hit.internal) {
-          eta1 = closest_hit.material.refractive_index;
-          eta2 = inside_stack.peek().refractive_index;
-        } else if (not inside_stack.empty()) {
-          eta1 = inside_stack.peek().refractive_index;
-          eta2 = closest_hit.material.refractive_index;
-        } else {
-          eta1 = AIR_REF_INDEX;
-          eta2 = closest_hit.material.refractive_index;
+        if (closest_hit.material.transparent == 1) {
+          float eta1;
+          float eta2;
+          if (closest_hit.internal && inside_stack.top == 1) {
+            eta1 = closest_hit.material.refractive_index;
+            eta2 = AIR_REF_INDEX;
+          } else if (closest_hit.internal) {
+            eta1 = closest_hit.material.refractive_index;
+            eta2 = inside_stack.peek().refractive_index;
+          } else if (not inside_stack.empty()) {
+            eta1 = inside_stack.peek().refractive_index;
+            eta2 = closest_hit.material.refractive_index;
+          } else {
+            eta1 = AIR_REF_INDEX;
+            eta2 = closest_hit.material.refractive_index;
+          }
+          bool is_transmission =
+              check_transmission(eta1, eta2, ray.dir, closest_hit.normal, rng);
+          if (is_transmission) {
+            ray.origin = ray.origin + closest_hit.t * ray.dir -
+                         1000 * EPS * closest_hit.normal;
+            if (closest_hit.internal) {
+              inside_stack.pop();
+            } else {
+              inside_stack.push(closest_hit.material);
+            }
+            ray.dir = refract_dir(ray.dir, closest_hit.normal, eta1, eta2,
+                                  closest_hit.material.translucency, rng);
+          } else {
+            ray.origin = ray.origin + closest_hit.t * ray.dir +
+                         1000 * EPS * closest_hit.normal;
+            ray.dir = reflect(ray.dir, closest_hit.normal,
+                              closest_hit.material.translucency, rng);
+          }
         }
 
-        bool is_transmission =
-            check_transmission(closest_hit.material.transparency, eta1, eta2,
-                               ray.dir, closest_hit.normal, rng);
+        else {
+          float reflectivity = closest_hit.material.reflectivity;
+          if (closest_hit.material.glossy == 1) {
+            bool is_transmission = check_transmission(
+                AIR_REF_INDEX, closest_hit.material.gloss_refractive_index,
+                ray.dir, closest_hit.normal, rng);
 
-        if (is_transmission) {
-          ray.origin = ray.origin + closest_hit.t * ray.dir -
-                       1000 * EPS * closest_hit.normal;
-          if (closest_hit.internal) {
-            inside_stack.pop();
+            if (not is_transmission) {
+              reflectivity = 1 - closest_hit.material.gloss_translucency;
+            } else {
+              ray.color = ray.color * closest_hit.material.color;
+            }
           } else {
-            inside_stack.push(closest_hit.material);
+            ray.color = ray.color * closest_hit.material.color;
           }
-          ray.dir = refract_dir(ray.dir, closest_hit.normal, eta1, eta2,
-                                closest_hit.material.translucency, rng);
-
-        } else {
           ray.origin = ray.origin + closest_hit.t * ray.dir +
                        1000 * EPS * closest_hit.normal;
-          ray.dir = reflect(ray.dir, closest_hit.normal,
-                            closest_hit.material.reflectivity, rng);
+          ray.dir = reflect(ray.dir, closest_hit.normal, reflectivity, rng);
         }
-
       } else {
         ray = add_environment(ray);
         break;

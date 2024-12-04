@@ -94,12 +94,18 @@ surfaces:                            # list of objects in scene
       - [15000, 15000.0, -0]
       - [-15000.0, 15000, -0]
     material:                        
+      luminance: 0.0                 # how much light the object emits (default 0)
       color: [0, 0.5, 0]             # RGB with range [0, 1]
-      reflectivity: 0.0              # range [0, 1] with 0 being diffuse and 1 mirror-like (default 0)
-      transparency: 0.0              # range [0, 1] with 0 being opaque and 1 perfectly transparent
+      reflectivity: 0.0              # float [0, 1] with 0 being diffuse and 1 mirror-like (default 0)
+      # TRANSPARENCY
+      transparent: false             # bool whether the object is transparent
       refractive_index: 1.0          # index of refraction (default 1.0; only relevant for transparent objects)
       translucency: 0.00             # 0.0 is clear; higher values (> 0.02) becoming very foggy (only relevant for transparent objects)
-      luminance: 0.0                 # how much light the object emits (default 0)
+      absorption: [0.0, 0.0, 0.0]    # exponential absorption rate of RBG light as it passes through material (only relevant for transparent objects)
+      # GLOSSINESS
+      gloss: false                   # bool whether the object is glossy (only relevant for non-transparent objects)
+      gloss_refractive_index: 1.0    # index of refraction (default 1.0; only relevant for glossy objects)
+      gloss_translucency: 0.00       # float [0, 1] controls gloss reflections, similar to reflectivity (only relevant for glossy objects)
 
 
   - type: sphere

@@ -14,20 +14,26 @@ class Material:
     def __init__(
         self,
         color: list = [1, 1, 1],
-        reflectivity: float = 0.0,
         luminance: float = 0.0,
-        transparency: float = 0.0,
-        translucency: float = 0.0,
+        reflectivity: float = 0.0,
+        glossy: bool = False,
+        gloss_refractive_index: float = 0.0,
+        gloss_translucency: float = 0.0,
+        transparent: bool = False,
         refractive_index: float = 1.0,
+        translucency: float = 0.0,
         absorption: list = [0.01, 0.01, 0.01],
     ):
         self.color = np.array(color)
         self.reflectivity = reflectivity
         self.luminance = luminance
-        self.transparency = transparency
+        self.transparent = transparent
         self.translucency = translucency
         self.refractive_index = refractive_index
         self.absorption = absorption
+        self.glossy = glossy
+        self.gloss_refractive_index = gloss_refractive_index
+        self.gloss_translucency = gloss_translucency
 
     def to_numpy(self):
         return np.array(
@@ -35,10 +41,13 @@ class Material:
                 self.color,
                 self.luminance,
                 self.reflectivity,
-                self.transparency,
-                self.translucency,
+                self.transparent,
                 self.refractive_index,
-                self.absorption
+                self.translucency,
+                self.absorption,
+                self.glossy,
+                self.gloss_refractive_index,
+                self.gloss_translucency,
             ),
             dtype=GPUTypes.material_dtype,
         )

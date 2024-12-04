@@ -24,10 +24,13 @@ class GPUTypes:
             ("color", np.float32, 3),
             ("intensity", np.float32),
             ("reflectivity", np.float32),
-            ("transparency", np.float32),
-            ("translucency", np.float32),
+            ("transparent", np.int32),  # 0 or 1
             ("refractive_index", np.float32),
+            ("translucency", np.float32),
             ("absorption", np.float32, 3),
+            ("glossy", np.int32),  # 0 or 1
+            ("gloss_refractive_index", np.float32),
+            ("gloss_translucency", np.float32),
         ]
     )
 
