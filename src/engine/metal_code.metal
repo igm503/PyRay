@@ -107,9 +107,8 @@ bool check_transmission(float transparency, float eta1, float eta2,
     return false;
   }
   float fresnel_approx = schlick_fresnel(abs(dot(dir, normal)), eta1, eta2);
-  float reflection_prob = fresnel_approx;
 
-  return rng.rand() > reflection_prob;
+  return rng.rand() > fresnel_approx;
 }
 
 packed_float3 rand_dir(packed_float3 normal, thread SimpleRNG &rng) {
@@ -130,10 +129,10 @@ packed_float3 reflect_specular(packed_float3 dir, packed_float3 normal) {
   return dir - 2 * dot(dir, normal) * normal;
 }
 
-packed_float3 refract_dir(packed_float3 dir, packed_float3 normal,
-                          bool internal, float eta1, float eta2,
-                          float translucency, thread SimpleRNG &rng) {
-  float cos_i = dot(normal, dir);
+packed_float3 refract_dir(packed_float3 dir, packed_float3 normal, float eta1,
+                          float eta2, float translucency,
+                          thread SimpleRNG &rng) {
+  float cos_i = abs(dot(normal, dir));
 
   float ref_rat = eta1 / eta2;
   float cos_t_squared = 1.0f - ref_rat * ref_rat * (1.0f - cos_i * cos_i);
@@ -373,9 +372,9 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
           } else {
             inside_stack.push(closest_hit.material);
           }
-          ray.dir =
-              refract_dir(ray.dir, closest_hit.normal, closest_hit.internal,
-                          eta1, eta2, closest_hit.material.translucency, rng);
+          ray.dir = refract_dir(ray.dir, closest_hit.normal, eta1, eta2,
+                                closest_hit.material.translucency, rng);
+
         } else {
           ray.origin = ray.origin + closest_hit.t * ray.dir +
                        1000 * EPS * closest_hit.normal;

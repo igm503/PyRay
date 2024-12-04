@@ -14,12 +14,12 @@ class Material:
     def __init__(
         self,
         color: list = [1, 1, 1],
-        reflectivity: float = 0,
-        luminance: float = 0,
-        transparency: float = 0,
-        translucency: float = 0,
-        refractive_index: float = 1,
-        absorption: list = [0.1, 0.1, 0.1],
+        reflectivity: float = 0.0,
+        luminance: float = 0.0,
+        transparency: float = 0.0,
+        translucency: float = 0.0,
+        refractive_index: float = 1.0,
+        absorption: list = [0.01, 0.01, 0.01],
     ):
         self.color = np.array(color)
         self.reflectivity = reflectivity
