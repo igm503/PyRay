@@ -1,0 +1,104 @@
+view:
+  origin: [-3.0, -3.0, 3]
+  dir: [1.0, 1.0, -0.4]
+  fov: 70
+  exposure: 2.0
+  num_samples: 50
+  max_bounces: 200
+  render_resolution: [1280, 720]
+  display_resolution: [2560, 1440]
+
+
+save_render:
+  save_path: renders/default
+  exposure: 2.0
+  num_samples: 1_000
+  max_bounces: 500
+  resolution: [3840, 2160]
+
+surfaces:
+  
+  # Ground
+  
+  - type: triangle
+    points:
+      - [-15000.0, -15000.0, 0]
+      - [15000, 15000.0, -0]
+      - [-15000.0, 15000, -0]
+    material:
+      color: [0.1, 0.3, 0.1]
+      reflectivity: 0.0
+      luminance: 0.0
+
+  - type: triangle
+    points:
+      - [-15000.0, -15000.0, 0]
+      - [15000, -15000.0, -0]
+      - [15000.0, 15000, -0]
+    material:
+      color: [0.1, 0.3, 0.1]
+      reflectivity: 0.0
+      luminance: 0.0
+
+  # sun
+
+  - type: sphere
+    center: [-30000.0, 50000.0, 100000.0]
+    radius: 5000
+    material:
+      color: [1.0, 1.0, 0.7]
+      luminance: 1_000.0
+
+  - type: mesh
+    surfaces:
+      - type: quad
+        points:
+          - [0.0, 0.0, 5.0]
+          - [0.0, 5.0, 5.0]
+          - [5.0, 5.0, 5.0]
+          - [5.0, 0.0, 5.0]
+      - type: quad
+        points:
+          - [0.0, 0.0, 8.0]
+          - [0.0, 5.0, 8.0]
+          - [5.0, 5.0, 8.0]
+          - [5.0, 0.0, 8.0]
+      - type: quad
+        points:
+          - [0.0, 0.0, 5.0]
+          - [0.0, 0.0, 8.0]
+          - [0.0, 5.0, 8.0]
+          - [0.0, 5.0, 5.0]
+      - type: quad
+        points:
+          - [5.0, 0.0, 5.0]
+          - [5.0, 0.0, 8.0]
+          - [5.0, 5.0, 8.0]
+          - [5.0, 5.0, 5.0]
+      - type: quad
+        points:
+          - [0.0, 0.0, 5.0]
+          - [0.0, 0.0, 8.0]
+          - [5.0, 0.0, 8.0]
+          - [5.0, 0.0, 5.0]
+      - type: quad
+        points:
+          - [0.0, 5.0, 5.0]
+          - [0.0, 5.0, 8.0]
+          - [5.0, 5.0, 8.0]
+          - [5.0, 5.0, 5.0]
+    material:
+      color: [1.0, 1.0, 1.0]
+      reflectivity: 0.9
+      transparent: true
+      refractive_index: 1.125
+      absorption: [0.6, 0.6, 0.2]
+      translucency: 0.0
+
+  - type: sphere
+    center: [5, 5, 1.2]
+    radius: 1
+    material:
+      color: [1.0, 0.5, 0.0]
+
+

@@ -9,9 +9,10 @@ from ..types import GPUTypes
 
 
 class Triangle(Surface):
-    def __init__(self, points: list, material: Material):
+    def __init__(self, points: list, material: Material, mesh_id: int | None = None):
         self.points = np.array(points)
         self.material = material
+        self.mesh_id = mesh_id if mesh_id is not None else -1
 
         self.ab = self.points[1] - self.points[0]
         self.ac = self.points[2] - self.points[0]
@@ -20,7 +21,13 @@ class Triangle(Surface):
 
     def to_numpy(self):
         return np.array(
-            (self.points[0], self.points[1], self.points[2], self.material.to_numpy()),
+            (
+                self.points[0],
+                self.points[1],
+                self.points[2],
+                self.material.to_numpy(),
+                self.mesh_id,
+            ),
             dtype=GPUTypes.triangle_dtype,
         )
 

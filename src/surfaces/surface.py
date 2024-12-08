@@ -25,14 +25,23 @@ class Material:
         absorption: list = [0.01, 0.01, 0.01],
     ):
         self.color = np.array(color)
+        assert reflectivity >= 0 and reflectivity <= 1
         self.reflectivity = reflectivity
+        assert luminance >= 0
         self.luminance = luminance
+        assert transparent is True or transparent is False
         self.transparent = transparent
+        assert translucency >= 0 and translucency <= 1
         self.translucency = translucency
+        assert refractive_index >= 0
         self.refractive_index = refractive_index
+        assert all([i >= 0 for i in absorption])
         self.absorption = absorption
+        assert glossy is True or glossy is False
         self.glossy = glossy
+        assert gloss_refractive_index >= 0
         self.gloss_refractive_index = gloss_refractive_index
+        assert gloss_translucency >= 0
         self.gloss_translucency = gloss_translucency
 
     def to_numpy(self):

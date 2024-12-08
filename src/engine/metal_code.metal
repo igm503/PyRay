@@ -25,25 +25,6 @@ public:
   }
 };
 
-template <typename T, int N> struct Stack {
-  T data[N];
-  int top = 0;
-
-  void push(thread T &item) {
-    if (top < N) {
-      data[top++] = item;
-    }
-  }
-
-  T pop() { return top > 0 ? data[--top] : T(); }
-
-  T peek() { return top > 0 ? data[top - 1] : T(); }
-
-  bool empty() { return top == 0; }
-
-  bool full() { return top == N; }
-};
-
 struct Ray {
   packed_float3 origin;
   packed_float3 dir;
@@ -84,6 +65,7 @@ struct Triangle {
   packed_float3 v1;
   packed_float3 v2;
   Material material;
+  int mesh_id;
 };
 
 struct Hit {
@@ -91,11 +73,50 @@ struct Hit {
   bool internal;
   packed_float3 normal;
   Material material;
+  int mesh_id;
+};
+
+struct Volume {
+  Material material;
+  int mesh_id;
+};
+
+template <int N> struct VolumeStack {
+  Volume data[N];
+  int top = 0;
+
+  void push(thread Volume &item) {
+    if (top < N) {
+      data[top++] = item;
+    }
+  }
+
+  Volume pop() {
+    if (top > 0) {
+      return data[--top];
+    }
+    Volume v;
+    v.mesh_id = -1;
+    return v;
+  }
+
+  Volume peek() {
+    if (top > 0) {
+      return data[top - 1];
+    }
+    Volume v;
+    v.mesh_id = -1;
+    return v;
+  }
+
+  bool empty() { return top == 0; }
+
+  bool full() { return top == N; }
 };
 
 constant Hit NO_HIT =
     Hit{INFINITY, false, packed_float3(0.0f, 0.0f, 0.0f),
-        Material{packed_float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f}};
+        Material{packed_float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f}, -1};
 
 float schlick_fresnel(float cosine, float eta1, float eta2) {
   float r0 = (eta1 - eta2) / (eta1 + eta2);
@@ -210,7 +231,7 @@ Hit sphere_hit(Ray ray, Sphere sphere) {
       normal = -normal;
     }
 
-    return Hit{t, internal, normal, sphere.material};
+    return Hit{t, internal, normal, sphere.material, -1};
   }
   return NO_HIT;
 }
@@ -249,17 +270,18 @@ Hit triangle_hit(Ray ray, Triangle triangle) {
     normal = -normal;
   }
 
-  return Hit{t, false, normal, triangle.material};
+  return Hit{t, false, normal, triangle.material, triangle.mesh_id};
 }
 
-Stack<Material, MAX_STACK_SIZE>
+VolumeStack<MAX_STACK_SIZE>
 get_surrounding_media(const device Sphere *spheres,
                       const device int *surrounding_spheres,
                       constant int &num_surrounding_spheres) {
-  Stack<Material, MAX_STACK_SIZE> media_stack;
+  VolumeStack<MAX_STACK_SIZE> media_stack;
   for (int i = num_surrounding_spheres - 1; i >= 0; i--) {
     Material material = spheres[surrounding_spheres[i]].material;
-    media_stack.push(material);
+    Volume item = {material, -1};
+    media_stack.push(item);
   }
   return media_stack;
 }
@@ -282,7 +304,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
                        uint id [[thread_position_in_grid]]) {
   SimpleRNG rng = SimpleRNG(seed, id * id);
 
-  Stack<Material, MAX_STACK_SIZE> _inside_stack = get_surrounding_media(
+  VolumeStack<MAX_STACK_SIZE> _inside_stack = get_surrounding_media(
       spheres, surrounding_spheres, num_surrounding_spheres);
 
   packed_float3 pixel = packed_float3(0.0f, 0.0f, 0.0f);
@@ -291,7 +313,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
     bool is_transmission = false;
     bool is_inside = false;
     Material inside_material;
-    Stack<Material, MAX_STACK_SIZE> inside_stack = _inside_stack;
+    VolumeStack<MAX_STACK_SIZE> inside_stack = _inside_stack;
     Ray ray = get_ray(view, id, rng);
 
     for (int bounce = 0; bounce < num_bounces; bounce++) {
@@ -320,7 +342,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
 
         if (not inside_stack.empty()) {
           ray.color = attenuate(ray.color, closest_hit.t,
-                                inside_stack.peek().absorption);
+                                inside_stack.peek().material.absorption);
         }
 
         if (hit_light) {
@@ -337,9 +359,9 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
             eta2 = AIR_REF_INDEX;
           } else if (closest_hit.internal) {
             eta1 = closest_hit.material.refractive_index;
-            eta2 = inside_stack.peek().refractive_index;
+            eta2 = inside_stack.peek().material.refractive_index;
           } else if (not inside_stack.empty()) {
-            eta1 = inside_stack.peek().refractive_index;
+            eta1 = inside_stack.peek().material.refractive_index;
             eta2 = closest_hit.material.refractive_index;
           } else {
             eta1 = AIR_REF_INDEX;
@@ -353,7 +375,14 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
             if (closest_hit.internal) {
               inside_stack.pop();
             } else {
-              inside_stack.push(closest_hit.material);
+              Volume inside_volume = inside_stack.peek();
+              int prev_mesh_id = inside_volume.mesh_id;
+              if (prev_mesh_id != -1 && prev_mesh_id == closest_hit.mesh_id) {
+                inside_stack.pop();
+              } else {
+                Volume item = {closest_hit.material, closest_hit.mesh_id};
+                inside_stack.push(item);
+              }
             }
             ray.dir = refract_dir(ray.dir, closest_hit.normal, eta1, eta2,
                                   closest_hit.material.translucency, rng);
@@ -361,7 +390,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
             ray.origin = ray.origin + closest_hit.t * ray.dir +
                          1000 * EPS * closest_hit.normal;
             ray.dir = reflect(ray.dir, closest_hit.normal,
-                              closest_hit.material.translucency, rng);
+                              1 - closest_hit.material.translucency, rng);
           }
         }
 

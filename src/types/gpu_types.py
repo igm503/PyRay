@@ -48,6 +48,7 @@ class GPUTypes:
             ("v1", np.float32, 3),
             ("v2", np.float32, 3),
             ("material", material_dtype),
+            ("mesh_id", np.int32),
         ]
     )
 

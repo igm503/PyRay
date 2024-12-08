@@ -21,7 +21,7 @@ class View:
         self.height = resolution[1]
         self.left_dir = normalize(np.cross(np.array([0, 0, 1]), self.dir))
 
-        self.move_speed = 3
+        self.move_speed = 1
         self.cam_speed = 0.1
 
     def to_numpy(self):

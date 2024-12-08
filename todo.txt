@@ -1,2 +1,1 @@
 - wavelength dependent refraction
-- making objects out of triangles (where the union of the triangles constitutes the surface of one object with a single set of properties, like transparency and absorption)
