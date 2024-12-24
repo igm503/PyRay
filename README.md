@@ -73,6 +73,8 @@ view:                                # parameters for virtual camera
   origin: [-30, -14.0, 5.0]          # initial cam position
   dir: [0.1, 0.1, 0]                 # initial cam direction
   fov: 70                            # field of view (degrees) of rendering
+  background_color: [0.5, 0.8, 0.9]  # background color for rays that hit nothing
+  backgorund_luminance: 1.0          # luminance of background for rays that hit nothing
   exposure: 3.0                      # brightness of render
   num_samples: 10                    # number of rays to simulate per pixel
   max_bounces: 50                    # number of bounces each ray can travel
