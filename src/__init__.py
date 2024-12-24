@@ -6,14 +6,6 @@ from .surfaces import Triangle, Sphere, Material
 from .utils import load_yaml
 from .constants import SKY_COLOR, SKY_LUMINANCE
 
-default_save_config = {
-    "save_path": "renders/default",
-    "exposure": 3.0,
-    "num_samples": 1000,
-    "max_bounces": 500,
-    "resolution": (3840, 2160),
-}
-
 
 def triangulate_quadrilateral(_points: list[list[float]]):
     points = np.array(_points)
@@ -65,6 +57,7 @@ def parse_surface_config(
 
 def parse_yaml(yaml_path: str):
     scene_config = load_yaml(yaml_path)
+    scene_name = yaml_path.split("/")[-1].split(".")[0]
 
     view_kwargs = scene_config["view"]
     view_kwargs["resolution"] = view_kwargs.pop("render_resolution")
@@ -93,6 +86,12 @@ def parse_yaml(yaml_path: str):
 
     scene = Scene(surfaces, background_color, background_luminance)
 
-    save_config = scene_config.get("save_render", default_save_config)
+    save_kwargs = scene_config["save_render"]
+    save_config = {}
+    save_config["save_path"] = save_kwargs.pop("save_path", f"renders/{scene_name}")
+    save_config["exposure"] = save_kwargs.pop("exposure", render_config["exposure"])
+    save_config["num_samples"] = save_kwargs.pop("num_samples", 10000)
+    save_config["max_bounces"] = save_kwargs.pop("max_bounces", 500)
+    save_config["resolution"] = save_kwargs.pop("resolution", (3840, 2160))
 
     return scene, view, render_config, save_config
