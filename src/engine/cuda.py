@@ -32,11 +32,15 @@ class CudaTracer:
         surrounding_spheres: list[int],
         num_rays: int,
         max_bounces: int,
+        background_color: tuple[float, float, float],
+        background_luminance: float,
         exposure: float,
         accumulate: bool,
         iteration: int = 0,
     ):
-        np_view, np_spheres, np_triangles = inputs_to_numpy(view, spheres, triangles)
+        np_view, np_spheres, np_triangles, np_surrounding, np_background_color = inputs_to_numpy(
+            view, spheres, triangles, surrounding_spheres, background_color
+        )
 
         num_pixels = view.width * view.height
         block_size = 256
@@ -47,10 +51,6 @@ class CudaTracer:
         cuda.memcpy_htod(view_buffer, np_view)
 
         num_surrounding = len(surrounding_spheres)
-        if not num_surrounding:
-            surrounding_spheres = [0]
-        np_surrounding = np.array(surrounding_spheres, dtype=np.int32)
-        np_surrounding = np.ascontiguousarray(np_surrounding)
         surrounding_buffer = self.get_buffer(
             np_surrounding.nbytes, "surrounding_spheres", cache_data=np_surrounding
         )
@@ -62,6 +62,11 @@ class CudaTracer:
         spheres_buffer = self.get_buffer(np_spheres.nbytes, "spheres", cache_data=np_spheres)
         triangles_buffer = self.get_buffer(
             np_triangles.nbytes, "triangles", cache_data=np_triangles
+        )
+        background_color_buffer = self.get_buffer(
+            np_background_color.nbytes,
+            "background_color",
+            cache_data=np_background_color,
         )
 
         image_size = num_pixels * 3 * np.dtype(np.float32).itemsize
@@ -79,6 +84,8 @@ class CudaTracer:
             np.int32(num_surrounding),
             np.int32(max_bounces),
             np.int32(num_rays),
+            background_color_buffer,
+            np.float32(background_luminance),
             np.float32(exposure),
             np.int32(accumulate),
             np.int32(iteration),
@@ -100,6 +107,8 @@ class CudaTracer:
         surrounding_spheres: list[int],
         num_rays: int,
         max_bounces: int,
+        background_color: tuple[float, float, float],
+        background_luminance: float,
         exposure: float,
     ):
         return self.render_iteration(
@@ -109,6 +118,8 @@ class CudaTracer:
             surrounding_spheres,
             num_rays,
             max_bounces,
+            background_color,
+            background_luminance,
             exposure,
             False,
         )
@@ -121,6 +132,8 @@ class CudaTracer:
         surrounding_spheres: list[int],
         num_rays: int,
         max_bounces: int,
+        background_color: tuple[float, float, float],
+        background_luminance: float,
         exposure: float,
         num_iterations: int,
     ):
@@ -133,6 +146,8 @@ class CudaTracer:
                 surrounding_spheres,
                 num_rays,
                 max_bounces,
+                background_color,
+                background_luminance,
                 exposure,
                 True,
                 iteration,

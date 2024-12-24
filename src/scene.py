@@ -10,9 +10,16 @@ from .engine import get_engine
 
 
 class Scene:
-    def __init__(self, surfaces: list[Surface]):
+    def __init__(
+        self,
+        surfaces: list[Surface],
+        background_color: tuple[float, float, float],
+        background_luminance: float,
+    ):
         self.triangles = [surface for surface in surfaces if isinstance(surface, Triangle)]
         self.spheres = [surface for surface in surfaces if isinstance(surface, Sphere)]
+        self.background_color = background_color
+        self.background_luminance = background_luminance
 
     def render(
         self,
@@ -31,6 +38,8 @@ class Scene:
             surrounding_media,
             num_rays,
             max_bounces,
+            self.background_color,
+            self.background_luminance,
             exposure,
         )
         return cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
@@ -68,6 +77,8 @@ class Scene:
                     surrounding_media,
                     rays_per_frame,
                     max_bounces,
+                    self.background_color,
+                    self.background_luminance,
                     exposure,
                     num_iterations,
                 )

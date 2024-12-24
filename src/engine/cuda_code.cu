@@ -6,7 +6,6 @@
 #define BIG_EPS 1e-3f
 #define MAX_STACK_SIZE 8
 
-__constant__ float3 SKY_COLOR = {0.53f, 0.81f, 0.92f};
 __constant__ float AIR_REF_INDEX = 1.0;
 
 struct Ray {
@@ -236,12 +235,6 @@ __device__ float3 tone_map(float3 color, float exposure) {
   return 255.0f * (1.0f - expf(-color * exposure));
 }
 
-__device__ Ray add_environment(Ray ray) {
-  ray.intensity = 1.0f;
-  ray.color = ray.color * SKY_COLOR;
-  return ray;
-}
-
 __device__ Ray get_ray(const View view, int idx, curandState *state) {
   float x_offset =
       static_cast<float>(idx % view.width) + 3 * curand_uniform(state) - 1.5f;
@@ -348,9 +341,10 @@ __global__ void trace_rays(View *view, curandState *rand_states,
                            Sphere *spheres, Triangle *triangles,
                            int *surrounding_spheres, int num_spheres,
                            int num_triangles, int num_surrounding_spheres,
-                           int num_bounces, int num_rays, float exposure,
-                           int accumulate, int iteration, float3 *accumulation,
-                           float3 *out) {
+                           int num_bounces, int num_rays,
+                           float3 *background_color, float background_luminance,
+                           float exposure, int accumulate, int iteration,
+                           float3 *accumulation, float3 *out) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx >= view->width * view->height)
     return;
@@ -464,7 +458,8 @@ __global__ void trace_rays(View *view, curandState *rand_states,
           ray.dir = reflect(ray.dir, closest_hit.normal, reflectivity, rng);
         }
       } else {
-        ray = add_environment(ray);
+        ray.intensity = background_luminance;
+        ray.color = ray.color * background_color[0];
         break;
       }
     }

@@ -45,11 +45,15 @@ class MetalTracer:
         surrounding_spheres: list[int],
         num_rays: int,
         max_bounces: int,
+        background_color: tuple[float, float, float],
+        background_luminance: float,
         exposure: float,
         accumulate: bool,
         iteration: int = 0,
     ):
-        np_view, np_spheres, np_triangles = inputs_to_numpy(view, spheres, triangles)
+        np_view, np_spheres, np_triangles, np_surrounding, np_background_color = inputs_to_numpy(
+            view, spheres, triangles, surrounding_spheres, background_color
+        )
 
         seed = np.random.randint(0, 2**16 - 1, dtype=np.int32)
 
@@ -70,6 +74,8 @@ class MetalTracer:
             (np.int32(num_surrounding), "num_surrounding_spheres"),
             (np.int32(max_bounces), "max_bounces"),
             (np.int32(num_rays), "num_rays"),
+            (np_background_color, "background_color"),
+            (np.float32(background_luminance), "background_luminance"),
             (np.float32(exposure), "exposure"),
             (np.bool_(accumulate), "accumulate"),
             (np.int32(iteration), "iteration"),
@@ -113,6 +119,8 @@ class MetalTracer:
         surrounding_spheres: list[int],
         num_rays: int,
         max_bounces: int,
+        background_color: tuple[float, float, float],
+        background_luminance: float,
         exposure: float,
     ):
         return self.render_iteration(
@@ -122,6 +130,8 @@ class MetalTracer:
             surrounding_spheres,
             num_rays,
             max_bounces,
+            background_color,
+            background_luminance,
             exposure,
             False,
         )
@@ -134,6 +144,8 @@ class MetalTracer:
         surrounding_spheres: list[int],
         num_rays: int,
         max_bounces: int,
+        background_color: tuple[float, float, float],
+        background_luminance: float,
         exposure: float,
         num_iterations: int,
     ):
@@ -146,6 +158,8 @@ class MetalTracer:
                 surrounding_spheres,
                 num_rays,
                 max_bounces,
+                background_color,
+                background_luminance,
                 exposure,
                 True,
                 iteration,

@@ -4,6 +4,7 @@ from .scene import Scene
 from .view import View
 from .surfaces import Triangle, Sphere, Material
 from .utils import load_yaml
+from .constants import SKY_COLOR, SKY_LUMINANCE
 
 default_save_config = {
     "save_path": "renders/default",
@@ -74,6 +75,9 @@ def parse_yaml(yaml_path: str):
     render_config["max_bounces"] = view_kwargs.pop("max_bounces")
     render_config["display_resolution"] = view_kwargs.pop("display_resolution")
 
+    background_color = view_kwargs.pop("background_color", SKY_COLOR)
+    background_luminance = view_kwargs.pop("background_luminance", SKY_LUMINANCE)
+
     view = View(**view_kwargs)
 
     surfaces = []
@@ -87,7 +91,7 @@ def parse_yaml(yaml_path: str):
             mesh_id = None
         surfaces.extend(parse_surface_config(surface, mesh_id=mesh_id))
 
-    scene = Scene(surfaces)
+    scene = Scene(surfaces, background_color, background_luminance)
 
     save_config = scene_config.get("save_render", default_save_config)
 

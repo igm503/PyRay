@@ -4,7 +4,6 @@ using namespace metal;
 
 constant float EPS = 1e-6;
 constant float BIG_EPS = 1e-3;
-constant float3 SKY_COLOR = float3(0.53, 0.81, 0.92);
 constant float AIR_REF_INDEX = 1.0;
 constant int MAX_STACK_SIZE = 8;
 
@@ -183,12 +182,6 @@ packed_float3 tone_map(packed_float3 color, float exposure) {
   return (1 - exp(-color * exposure)) * 255.0;
 }
 
-Ray add_environment(Ray ray) {
-  ray.intensity = 1.0;
-  ray.color = ray.color * SKY_COLOR;
-  return ray;
-}
-
 Ray get_ray(constant View &view, uint base_id, thread SimpleRNG &rng) {
   float x_offset =
       static_cast<float>(base_id % view.width) + 3 * rng.rand() - 1.5f;
@@ -296,11 +289,13 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
                        constant int &num_surrounding_spheres [[buffer(7)]],
                        constant int &num_bounces [[buffer(8)]],
                        constant int &num_rays [[buffer(9)]],
-                       constant float &exposure [[buffer(10)]],
-                       constant bool &accumulate [[buffer(11)]],
-                       constant int &iteration [[buffer(12)]],
-                       device packed_float3 *accumulation [[buffer(13)]],
-                       device packed_float3 *out [[buffer(14)]],
+                       const device packed_float3 *background_color [[buffer(10)]],
+                       constant float &background_luminance [[buffer(11)]],
+                       constant float &exposure [[buffer(12)]],
+                       constant bool &accumulate [[buffer(13)]],
+                       constant int &iteration [[buffer(14)]],
+                       device packed_float3 *accumulation [[buffer(15)]],
+                       device packed_float3 *out [[buffer(16)]],
                        uint id [[thread_position_in_grid]]) {
   SimpleRNG rng = SimpleRNG(seed, id * id);
 
@@ -411,7 +406,8 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
           ray.dir = reflect(ray.dir, closest_hit.normal, reflectivity, rng);
         }
       } else {
-        ray = add_environment(ray);
+        ray.intensity = background_luminance;
+        ray.color = ray.color * background_color[0];
         break;
       }
     }

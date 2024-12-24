@@ -53,7 +53,13 @@ class GPUTypes:
     )
 
 
-def inputs_to_numpy(view: "View", spheres: list["Sphere"], triangles: list["Triangle"]):
+def inputs_to_numpy(
+    view: "View",
+    spheres: list["Sphere"],
+    triangles: list["Triangle"],
+    surrounding_spheres: list[int],
+    background_color: tuple[float, float, float],
+):
     numpy_view = view.to_numpy()
     numpy_spheres = np.zeros(max(len(spheres), 1), dtype=GPUTypes.sphere_dtype)
     for i, sphere in enumerate(spheres):
@@ -61,4 +67,12 @@ def inputs_to_numpy(view: "View", spheres: list["Sphere"], triangles: list["Tria
     numpy_triangles = np.zeros(max(len(triangles), 1), dtype=GPUTypes.triangle_dtype)
     for i, triangle in enumerate(triangles):
         numpy_triangles[i] = triangle.to_numpy()
-    return numpy_view, numpy_spheres, numpy_triangles
+    numpy_surrounding_spheres = np.ascontiguousarray(np.array(surrounding_spheres, dtype=np.int32))
+    numpy_background_color = np.ascontiguousarray(np.array(background_color, dtype=np.float32))
+    return (
+        numpy_view,
+        numpy_spheres,
+        numpy_triangles,
+        numpy_surrounding_spheres,
+        numpy_background_color,
+    )
