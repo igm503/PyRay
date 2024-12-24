@@ -1,0 +1,248 @@
+view:
+  origin: [0.0, 0.9, 5.7]
+  dir: [0.0, 0.95, -0.3]
+  fov: 70
+  exposure: 2.0
+  num_samples: 50
+  max_bounces: 200
+  render_resolution: [1280, 720]
+  display_resolution: [2560, 1440]
+
+
+save_render:
+  exposure: 2.0
+  num_samples: 10_000
+  max_bounces: 500
+  resolution: [3840, 2160]
+
+surfaces:
+  
+  # Ground
+  
+  - type: triangle
+    points:
+      - [-15000.0, -15000.0, 0]
+      - [15000, 15000.0, -0]
+      - [-15000.0, 15000, -0]
+    material:
+      color: [0.1, 0.3, 0.1]
+  - type: triangle
+    points:
+      - [-15000.0, -15000.0, 0]
+      - [15000, -15000.0, -0]
+      - [15000.0, 15000, -0]
+    material:
+      color: [0.1, 0.3, 0.1]
+
+  # sun
+  
+  - type: sphere
+    center: [0.0, -70_000.0, 100_000.0]
+    radius: 5000
+    material:
+      color: [1.0, 1.0, 0.7]
+      luminance: 1_000.0
+
+  - type: sphere
+    center: [-4, 8, 2]
+    radius: 1
+    material:
+      transparent: True
+      refractive_index: 1.5
+      absorption: [0.1, 0.1, 0.1]
+
+  - type: sphere
+    center: [-2, 10, 2]
+    radius: 1
+    material:
+      transparent: True
+      refractive_index: 1.5
+      absorption: [0.0, 0.1, 0.0]
+
+  - type: sphere
+    center: [-2, 13, 4]
+    radius: 1
+    material:
+      transparent: True
+      refractive_index: 1.5
+      absorption: [0.0, 0.3, 0.0]
+
+  - type: sphere
+    center: [-4, 11, 4]
+    radius: 1
+    material:
+      transparent: True
+      refractive_index: 1.5
+      absorption: [0.0, 0.9, 0.0]
+
+  - type: mesh
+    surfaces:
+      - type: quad
+        points:
+          - [3.3, 7.3, 1.3]
+          - [3.3, 8.7, 1.3]
+          - [4.7, 8.7, 1.3]
+          - [4.7, 7.3, 1.3]
+      - type: quad
+        points:
+          - [3.3, 7.3, 2.7]
+          - [3.3, 8.7, 2.7]
+          - [4.7, 8.7, 2.7]
+          - [4.7, 7.3, 2.7]
+      - type: quad
+        points:
+          - [3.3, 7.3, 1.3]
+          - [3.3, 7.3, 2.7]
+          - [3.3, 8.7, 2.7]
+          - [3.3, 8.7, 1.3]
+      - type: quad
+        points:
+          - [4.7, 7.3, 1.3]
+          - [4.7, 7.3, 2.7]
+          - [4.7, 8.7, 2.7]
+          - [4.7, 8.7, 1.3]
+      - type: quad
+        points:
+          - [3.3, 7.3, 1.3]
+          - [3.3, 7.3, 2.7]
+          - [4.7, 7.3, 2.7]
+          - [4.7, 7.3, 1.3]
+      - type: quad
+        points:
+          - [3.3, 8.7, 1.3]
+          - [3.3, 8.7, 2.7]
+          - [4.7, 8.7, 2.7]
+          - [4.7, 8.7, 1.3]
+    material:
+      transparent: True
+      refractive_index: 1.5
+      absorption: [0.1, 0.1, 0.1]
+
+  - type: mesh
+    surfaces:
+      - type: quad
+        points:
+          - [1.3, 9.3, 1.3]
+          - [1.3, 10.7, 1.3]
+          - [2.7, 10.7, 1.3]
+          - [2.7, 9.3, 1.3]
+      - type: quad
+        points:
+          - [1.3, 9.3, 2.7]
+          - [1.3, 10.7, 2.7]
+          - [2.7, 10.7, 2.7]
+          - [2.7, 9.3, 2.7]
+      - type: quad
+        points:
+          - [1.3, 9.3, 1.3]
+          - [1.3, 9.3, 2.7]
+          - [1.3, 10.7, 2.7]
+          - [1.3, 10.7, 1.3]
+      - type: quad
+        points:
+          - [2.7, 9.3, 1.3]
+          - [2.7, 9.3, 2.7]
+          - [2.7, 10.7, 2.7]
+          - [2.7, 10.7, 1.3]
+      - type: quad
+        points:
+          - [1.3, 9.3, 1.3]
+          - [1.3, 9.3, 2.7]
+          - [2.7, 9.3, 2.7]
+          - [2.7, 9.3, 1.3]
+      - type: quad
+        points:
+          - [1.3, 10.7, 1.3]
+          - [1.3, 10.7, 2.7]
+          - [2.7, 10.7, 2.7]
+          - [2.7, 10.7, 1.3]
+    material:
+      transparent: True
+      refractive_index: 1.5
+      absorption: [0.0, 0.1, 0.0]
+
+  - type: mesh
+    surfaces:
+      - type: quad
+        points:
+          - [3.3, 10.3, 3.3]
+          - [3.3, 11.7, 3.3]
+          - [4.7, 11.7, 3.3]
+          - [4.7, 10.3, 3.3]
+      - type: quad
+        points:
+          - [3.3, 10.3, 4.7]
+          - [3.3, 11.7, 4.7]
+          - [4.7, 11.7, 4.7]
+          - [4.7, 10.3, 4.7]
+      - type: quad
+        points:
+          - [3.3, 10.3, 3.3]
+          - [3.3, 10.3, 4.7]
+          - [3.3, 11.7, 4.7]
+          - [3.3, 11.7, 3.3]
+      - type: quad
+        points:
+          - [4.7, 10.3, 3.3]
+          - [4.7, 10.3, 4.7]
+          - [4.7, 11.7, 4.7]
+          - [4.7, 11.7, 3.3]
+      - type: quad
+        points:
+          - [3.3, 10.3, 3.3]
+          - [3.3, 10.3, 4.7]
+          - [4.7, 10.3, 4.7]
+          - [4.7, 10.3, 3.3]
+      - type: quad
+        points:
+          - [3.3, 11.7, 3.3]
+          - [3.3, 11.7, 4.7]
+          - [4.7, 11.7, 4.7]
+          - [4.7, 11.7, 3.3]
+    material:
+      transparent: True
+      refractive_index: 1.5
+      absorption: [0.0, 0.3, 0.0]
+
+  - type: mesh
+    surfaces:
+      - type: quad
+        points:
+          - [1.3, 12.3, 3.3]
+          - [1.3, 13.7, 3.3]
+          - [2.7, 13.7, 3.3]
+          - [2.7, 12.3, 3.3]
+      - type: quad
+        points:
+          - [1.3, 12.3, 4.7]
+          - [1.3, 13.7, 4.7]
+          - [2.7, 13.7, 4.7]
+          - [2.7, 12.3, 4.7]
+      - type: quad
+        points:
+          - [1.3, 12.3, 3.3]
+          - [1.3, 12.3, 4.7]
+          - [1.3, 13.7, 4.7]
+          - [1.3, 13.7, 3.3]
+      - type: quad
+        points:
+          - [2.7, 12.3, 3.3]
+          - [2.7, 12.3, 4.7]
+          - [2.7, 13.7, 4.7]
+          - [2.7, 13.7, 3.3]
+      - type: quad
+        points:
+          - [1.3, 12.3, 3.3]
+          - [1.3, 12.3, 4.7]
+          - [2.7, 12.3, 4.7]
+          - [2.7, 12.3, 3.3]
+      - type: quad
+        points:
+          - [1.3, 13.7, 3.3]
+          - [1.3, 13.7, 4.7]
+          - [2.7, 13.7, 4.7]
+          - [2.7, 13.7, 3.3]
+    material:
+      transparent: True
+      refractive_index: 1.5
+      absorption: [0.0, 0.9, 0.0]
