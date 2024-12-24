@@ -4,10 +4,10 @@
 
 #define EPS 1e-6f
 #define BIG_EPS 1e-3f
+#define MAX_STACK_SIZE 8
 
 __constant__ float3 SKY_COLOR = {0.53f, 0.81f, 0.92f};
 __constant__ float AIR_REF_INDEX = 1.0;
-__constant__ int MAX_STACK_SIZE = 8;
 
 struct Ray {
   float3 origin;
@@ -113,6 +113,13 @@ __device__ float3 operator+(const float3 &a, const float3 &b) {
   return make_float3(a.x + b.x, a.y + b.y, a.z + b.z);
 }
 
+__device__ float3 &operator+=(float3 &a, const float3 &b) {
+  a.x += b.x;
+  a.y += b.y;
+  a.z += b.z;
+  return a;
+}
+
 __device__ float3 operator-(const float3 &a, const float3 &b) {
   return make_float3(a.x - b.x, a.y - b.y, a.z - b.z);
 }
@@ -161,6 +168,10 @@ __device__ float3 lerp(const float3 &a, const float3 &b, const float &w) {
 
 __device__ float3 expf(const float3 &a) {
   return make_float3(expf(a.x), expf(a.y), expf(a.z));
+}
+
+__device__ float3 tan(const float3 &a) {
+  return make_float3(tanf(a.x), tanf(a.y), tanf(a.z));
 }
 
 // reflection functions
@@ -357,9 +368,6 @@ __global__ void trace_rays(View *view, curandState *rand_states,
   float3 pixel = make_float3(0.0f, 0.0f, 0.0f);
 
   for (int ray_num = 0; ray_num < num_rays; ray_num++) {
-    bool is_transmission = false;
-    bool is_inside = false;
-    Material inside_material;
     MeshStack<MAX_STACK_SIZE> inside_stack = _inside_stack;
     Ray ray = get_ray(*view, idx, rng);
 
@@ -414,8 +422,8 @@ __global__ void trace_rays(View *view, curandState *rand_states,
             eta1 = AIR_REF_INDEX;
             eta2 = closest_hit.material.refractive_index;
           }
-          bool is_transmission = check_transmission(
-              eta1, eta2, ray.dir, closest_hit.normal, rng);
+          bool is_transmission =
+              check_transmission(eta1, eta2, ray.dir, closest_hit.normal, rng);
           if (is_transmission) {
             ray.origin = ray.origin + closest_hit.t * ray.dir -
                          BIG_EPS * closest_hit.normal;
@@ -431,15 +439,13 @@ __global__ void trace_rays(View *view, curandState *rand_states,
                 inside_stack.push(item);
               }
             }
-            ray.dir =
-                refract_dir(ray.dir, closest_hit.normal, eta1, eta2,
-                            closest_hit.material.translucency, rng);
+            ray.dir = refract_dir(ray.dir, closest_hit.normal, eta1, eta2,
+                                  closest_hit.material.translucency, rng);
           } else {
             ray.origin = ray.origin + closest_hit.t * ray.dir +
                          BIG_EPS * closest_hit.normal;
-            ray.dir =
-                reflect(ray.dir, closest_hit.normal,
-                        1.0f - closest_hit.material.translucency, rng);
+            ray.dir = reflect(ray.dir, closest_hit.normal,
+                              1.0f - closest_hit.material.translucency, rng);
           }
         }
 
@@ -460,8 +466,7 @@ __global__ void trace_rays(View *view, curandState *rand_states,
           }
           ray.origin = ray.origin + closest_hit.t * ray.dir +
                        BIG_EPS * closest_hit.normal;
-          ray.dir =
-              reflect(ray.dir, closest_hit.normal, reflectivity, rng);
+          ray.dir = reflect(ray.dir, closest_hit.normal, reflectivity, rng);
         }
       } else {
         ray = add_environment(ray);

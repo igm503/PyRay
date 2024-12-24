@@ -310,9 +310,6 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
   packed_float3 pixel = packed_float3(0.0f, 0.0f, 0.0f);
 
   for (int ray_num = 0; ray_num < num_rays; ray_num++) {
-    bool is_transmission = false;
-    bool is_inside = false;
-    Material inside_material;
     MeshStack<MAX_STACK_SIZE> inside_stack = _inside_stack;
     Ray ray = get_ray(view, id, rng);
 
