@@ -67,6 +67,7 @@ def inputs_to_numpy(
     numpy_triangles = np.zeros(max(len(triangles), 1), dtype=GPUTypes.triangle_dtype)
     for i, triangle in enumerate(triangles):
         numpy_triangles[i] = triangle.to_numpy()
+    surrounding_spheres = [0] if not surrounding_spheres else surrounding_spheres
     numpy_surrounding_spheres = np.ascontiguousarray(np.array(surrounding_spheres, dtype=np.int32))
     numpy_background_color = np.ascontiguousarray(np.array(background_color, dtype=np.float32))
     return (

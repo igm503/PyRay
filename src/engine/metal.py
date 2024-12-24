@@ -58,10 +58,10 @@ class MetalTracer:
         seed = np.random.randint(0, 2**16 - 1, dtype=np.int32)
 
         num_surrounding = len(surrounding_spheres)
-        if not num_surrounding:
-            surrounding_spheres = [0]
-        np_surrounding = np.array(surrounding_spheres, dtype=np.int32)
-        np_surrounding = np.ascontiguousarray(np_surrounding)
+        # if not num_surrounding:
+        #     surrounding_spheres = [0]
+        # np_surrounding = np.array(surrounding_spheres, dtype=np.int32)
+        # np_surrounding = np.ascontiguousarray(np_surrounding)
 
         input_data = [
             (np_view, "view"),
