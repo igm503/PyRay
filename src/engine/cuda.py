@@ -29,6 +29,7 @@ class CudaTracer:
         view: "View",
         spheres: list["Sphere"],
         triangles: list["Triangle"],
+        surrounding_spheres: list[int],
         num_rays: int,
         max_bounces: int,
         exposure: float,
@@ -41,11 +42,23 @@ class CudaTracer:
         block_size = 256
         grid_size = (num_pixels + block_size - 1) // block_size
 
+        # copied each render
         view_buffer = self.get_buffer(np_view.nbytes, "view")
         cuda.memcpy_htod(view_buffer, np_view)
 
+        num_surrounding = len(surrounding_spheres)
+        if not num_surrounding:
+            surrounding_spheres = [0]
+        np_surrounding = np.array(surrounding_spheres, dtype=np.int32)
+        np_surrounding = np.ascontiguousarray(np_surrounding)
+        surrounding_buffer = self.get_buffer(
+            np_surrounding.nbytes, "surrounding_spheres", cache_data=np_surrounding
+        )
+        cuda.memcpy_htod(surrounding_buffer, np_surrounding)
+
         random_states = self.get_random_states(num_pixels, grid_size, block_size)
 
+        # not copied each render
         spheres_buffer = self.get_buffer(np_spheres.nbytes, "spheres", cache_data=np_spheres)
         triangles_buffer = self.get_buffer(
             np_triangles.nbytes, "triangles", cache_data=np_triangles
@@ -60,8 +73,10 @@ class CudaTracer:
             random_states,
             spheres_buffer,
             triangles_buffer,
+            surrounding_buffer,
             np.int32(len(spheres)),
             np.int32(len(triangles)),
+            np.int32(num_surrounding),
             np.int32(max_bounces),
             np.int32(num_rays),
             np.float32(exposure),
@@ -82,6 +97,7 @@ class CudaTracer:
         view: "View",
         spheres: list["Sphere"],
         triangles: list["Triangle"],
+        surrounding_spheres: list[int],
         num_rays: int,
         max_bounces: int,
         exposure: float,
@@ -90,6 +106,7 @@ class CudaTracer:
             view,
             spheres,
             triangles,
+            surrounding_spheres,
             num_rays,
             max_bounces,
             exposure,
@@ -101,6 +118,7 @@ class CudaTracer:
         view: "View",
         spheres: list["Sphere"],
         triangles: list["Triangle"],
+        surrounding_spheres: list[int],
         num_rays: int,
         max_bounces: int,
         exposure: float,
@@ -112,6 +130,7 @@ class CudaTracer:
                 view,
                 spheres,
                 triangles,
+                surrounding_spheres,
                 num_rays,
                 max_bounces,
                 exposure,
