@@ -10,7 +10,6 @@ view:
 
 
 save_render:
-  save_path: renders/reflectivity
   exposure: 2.0
   num_samples: 10_000
   max_bounces: 500
@@ -27,8 +26,6 @@ surfaces:
       - [-15000.0, 15000, -0]
     material:
       color: [0.1, 0.3, 0.1]
-      reflectivity: 0.0
-      luminance: 0.0
 
   - type: triangle
     points:
@@ -37,8 +34,6 @@ surfaces:
       - [15000.0, 15000, -0]
     material:
       color: [0.1, 0.3, 0.1]
-      reflectivity: 0.0
-      luminance: 0.0
 
   # sun
   - type: sphere

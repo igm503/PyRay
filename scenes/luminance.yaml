@@ -11,7 +11,6 @@ view:
 
 
 save_render:
-  save_path: renders/luminance
   exposure: 2.0
   num_samples: 10_000
   max_bounces: 500
