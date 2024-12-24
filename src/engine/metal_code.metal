@@ -76,35 +76,35 @@ struct Hit {
   int mesh_id;
 };
 
-struct Volume {
+struct Mesh {
   Material material;
   int mesh_id;
 };
 
-template <int N> struct VolumeStack {
-  Volume data[N];
+template <int N> struct MeshStack {
+  Mesh data[N];
   int top = 0;
 
-  void push(thread Volume &item) {
+  void push(thread Mesh &item) {
     if (top < N) {
       data[top++] = item;
     }
   }
 
-  Volume pop() {
+  Mesh pop() {
     if (top > 0) {
       return data[--top];
     }
-    Volume v;
+    Mesh v;
     v.mesh_id = -1;
     return v;
   }
 
-  Volume peek() {
+  Mesh peek() {
     if (top > 0) {
       return data[top - 1];
     }
-    Volume v;
+    Mesh v;
     v.mesh_id = -1;
     return v;
   }
@@ -273,14 +273,14 @@ Hit triangle_hit(Ray ray, Triangle triangle) {
   return Hit{t, false, normal, triangle.material, triangle.mesh_id};
 }
 
-VolumeStack<MAX_STACK_SIZE>
+MeshStack<MAX_STACK_SIZE>
 get_surrounding_media(const device Sphere *spheres,
                       const device int *surrounding_spheres,
                       constant int &num_surrounding_spheres) {
-  VolumeStack<MAX_STACK_SIZE> media_stack;
+  MeshStack<MAX_STACK_SIZE> media_stack;
   for (int i = num_surrounding_spheres - 1; i >= 0; i--) {
     Material material = spheres[surrounding_spheres[i]].material;
-    Volume item = {material, -1};
+    Mesh item = {material, -1};
     media_stack.push(item);
   }
   return media_stack;
@@ -304,7 +304,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
                        uint id [[thread_position_in_grid]]) {
   SimpleRNG rng = SimpleRNG(seed, id * id);
 
-  VolumeStack<MAX_STACK_SIZE> _inside_stack = get_surrounding_media(
+  MeshStack<MAX_STACK_SIZE> _inside_stack = get_surrounding_media(
       spheres, surrounding_spheres, num_surrounding_spheres);
 
   packed_float3 pixel = packed_float3(0.0f, 0.0f, 0.0f);
@@ -313,7 +313,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
     bool is_transmission = false;
     bool is_inside = false;
     Material inside_material;
-    VolumeStack<MAX_STACK_SIZE> inside_stack = _inside_stack;
+    MeshStack<MAX_STACK_SIZE> inside_stack = _inside_stack;
     Ray ray = get_ray(view, id, rng);
 
     for (int bounce = 0; bounce < num_bounces; bounce++) {
@@ -375,12 +375,12 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
             if (closest_hit.internal) {
               inside_stack.pop();
             } else {
-              Volume inside_volume = inside_stack.peek();
+              Mesh inside_volume = inside_stack.peek();
               int prev_mesh_id = inside_volume.mesh_id;
               if (prev_mesh_id != -1 && prev_mesh_id == closest_hit.mesh_id) {
                 inside_stack.pop();
               } else {
-                Volume item = {closest_hit.material, closest_hit.mesh_id};
+                Mesh item = {closest_hit.material, closest_hit.mesh_id};
                 inside_stack.push(item);
               }
             }
