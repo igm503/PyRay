@@ -66,15 +66,10 @@ struct Mesh {
 };
 
 template <int N> struct MeshStack {
-  Mesh *data;
+  Mesh data[N];
   int top;
 
-  __device__ MeshStack() {
-    top = 0;
-    data = new Mesh[N];
-  }
-
-  __device__ ~MeshStack() { delete[] data; }
+  __device__ MeshStack() { top = 0; }
 
   __device__ void push(const Mesh &item) {
     if (top < N) {
