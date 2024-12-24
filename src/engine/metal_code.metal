@@ -3,6 +3,7 @@
 using namespace metal;
 
 constant float EPS = 1e-6;
+constant float BIG_EPS = 1e-3;
 constant float3 SKY_COLOR = float3(0.53, 0.81, 0.92);
 constant float AIR_REF_INDEX = 1.0;
 constant int MAX_STACK_SIZE = 8;
@@ -126,9 +127,8 @@ float schlick_fresnel(float cosine, float eta1, float eta2) {
 
 bool check_transmission(float eta1, float eta2, packed_float3 dir,
                         packed_float3 normal, thread SimpleRNG &rng) {
-  float fresnel_approx = schlick_fresnel(abs(dot(dir, normal)), eta1, eta2);
-
-  return rng.rand() > fresnel_approx;
+  float reflect_prob = schlick_fresnel(abs(dot(dir, normal)), eta1, eta2);
+  return rng.rand() > reflect_prob;
 }
 
 packed_float3 rand_dir(packed_float3 normal, thread SimpleRNG &rng) {
@@ -319,15 +319,15 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
     for (int bounce = 0; bounce < num_bounces; bounce++) {
       Hit closest_hit = NO_HIT;
 
-      for (int sphere_id = 0; sphere_id < num_spheres; sphere_id++) {
-        Hit hit = sphere_hit(ray, spheres[sphere_id]);
+      for (int i = 0; i < num_spheres; i++) {
+        Hit hit = sphere_hit(ray, spheres[i]);
         if (hit.t < closest_hit.t) {
           closest_hit = hit;
         }
       }
 
-      for (int triangle_id = 0; triangle_id < num_triangles; triangle_id++) {
-        Hit hit = triangle_hit(ray, triangles[triangle_id]);
+      for (int i = 0; i < num_triangles; i++) {
+        Hit hit = triangle_hit(ray, triangles[i]);
         if (hit.t < closest_hit.t) {
           closest_hit = hit;
         }
@@ -340,7 +340,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
 
         bool hit_light = closest_hit.material.intensity > 0;
 
-        if (not inside_stack.empty()) {
+        if (!inside_stack.empty()) {
           ray.color = attenuate(ray.color, closest_hit.t,
                                 inside_stack.peek().material.absorption);
         }
@@ -360,7 +360,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
           } else if (closest_hit.internal) {
             eta1 = closest_hit.material.refractive_index;
             eta2 = inside_stack.peek().material.refractive_index;
-          } else if (not inside_stack.empty()) {
+          } else if (!inside_stack.empty()) {
             eta1 = inside_stack.peek().material.refractive_index;
             eta2 = closest_hit.material.refractive_index;
           } else {
@@ -371,7 +371,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
               check_transmission(eta1, eta2, ray.dir, closest_hit.normal, rng);
           if (is_transmission) {
             ray.origin = ray.origin + closest_hit.t * ray.dir -
-                         1000 * EPS * closest_hit.normal;
+                         BIG_EPS * closest_hit.normal;
             if (closest_hit.internal) {
               inside_stack.pop();
             } else {
@@ -388,7 +388,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
                                   closest_hit.material.translucency, rng);
           } else {
             ray.origin = ray.origin + closest_hit.t * ray.dir +
-                         1000 * EPS * closest_hit.normal;
+                         BIG_EPS * closest_hit.normal;
             ray.dir = reflect(ray.dir, closest_hit.normal,
                               1 - closest_hit.material.translucency, rng);
           }
@@ -401,7 +401,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
                 AIR_REF_INDEX, closest_hit.material.gloss_refractive_index,
                 ray.dir, closest_hit.normal, rng);
 
-            if (not is_transmission) {
+            if (!is_transmission) {
               reflectivity = 1 - closest_hit.material.gloss_translucency;
             } else {
               ray.color = ray.color * closest_hit.material.color;
@@ -410,7 +410,7 @@ kernel void trace_rays(constant View &view [[buffer(0)]],
             ray.color = ray.color * closest_hit.material.color;
           }
           ray.origin = ray.origin + closest_hit.t * ray.dir +
-                       1000 * EPS * closest_hit.normal;
+                       BIG_EPS * closest_hit.normal;
           ray.dir = reflect(ray.dir, closest_hit.normal, reflectivity, rng);
         }
       } else {
