@@ -2,12 +2,14 @@
 
 ![Alt text](assets/example.png?raw=true "Title")
 
-A ray tracing engine for python
+A ray tracing engine for python.
 
 # Features
-- Metal Acceleration
-- Spheres and Triangles
+- Metal and Cuda Acceleration
+- Spheres, Triangles, and Quads
+- Meshes from Triangles and Quads
 - Diffuse and Specular Reflections
+- Transparent Surfaces with Refraction
 - Basic HDR Tone Mapping
 - Realtime Mode
 - Save Higher Quality Renders
@@ -88,7 +90,8 @@ save_render:                         # parameters for high quality saved renders
 
 surfaces:                            # list of objects in scene
 
-  - type: triangle                   # can be "triangle" or "sphere"
+  # SINGLE OBJECTS
+  - type: triangle                   # can be "triangle", "sphere", or "quad"
     points:                          # vertices of triangle
       - [-15000.0, -15000.0, 0]
       - [15000, 15000.0, -0]
@@ -126,6 +129,54 @@ surfaces:                            # list of objects in scene
       color: [0.7, 0, 0.5]
       reflectivity: 1.0
 
+  # MESHES -- allow you to define triangle or quad meshes that have a homogeneous internal material
+
+  - type: mesh              
+    surfaces:
+      - type: quad                    # can be "triangle" or "quad"
+        points:
+          - [0.0, 0.0, 5.0]
+          - [0.0, 5.0, 5.0]
+          - [5.0, 5.0, 5.0]
+          - [5.0, 0.0, 5.0]
+      - type: quad
+        points:
+          - [0.0, 0.0, 8.0]
+          - [0.0, 5.0, 8.0]
+          - [5.0, 5.0, 8.0]
+          - [5.0, 0.0, 8.0]
+      - type: quad
+        points:
+          - [0.0, 0.0, 5.0]
+          - [0.0, 0.0, 8.0]
+          - [0.0, 5.0, 8.0]
+          - [0.0, 5.0, 5.0]
+      - type: quad
+        points:
+          - [5.0, 0.0, 5.0]
+          - [5.0, 0.0, 8.0]
+          - [5.0, 5.0, 8.0]
+          - [5.0, 5.0, 5.0]
+      - type: quad
+        points:
+          - [0.0, 0.0, 5.0]
+          - [0.0, 0.0, 8.0]
+          - [5.0, 0.0, 8.0]
+          - [5.0, 0.0, 5.0]
+      - type: quad
+        points:
+          - [0.0, 5.0, 5.0]
+          - [0.0, 5.0, 8.0]
+          - [5.0, 5.0, 8.0]
+          - [5.0, 5.0, 5.0]
+    material:                         # material properties for all surfaces in the mesh. Options are the same as for single surfaces.
+      color: [1.0, 1.0, 1.0]
+      reflectivity: 0.9
+      transparent: true
+      refractive_index: 1.125
+      absorption: [0.6, 0.6, 0.2]
+      translucency: 0.0
+
 ```
 Render your scene with
 ```
@@ -142,5 +193,5 @@ python demo.py scene_name.yaml --device cuda
 
 
 # TODO
-- Some Sort of Support for external scene formats
-- Transparency
+- Support for external mesh files
+- Camera views inside triangle meshes should consider refraction (this currently works for spheres)
