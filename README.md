@@ -32,8 +32,9 @@ pip install cupy-cuda11x
 ```
 3. Run the example scene
 ```
-cd PyRay && python demo.py default.yaml --device [cpu|metal|cuda]
+cd PyRay && python demo.py default.yaml --device [metal|cuda]
 ```
+Note: there is a cpu engine, but it is not optimized and is extraordinarily slow (on an M2 max chip, running on the cpu is 10,000-100,000x slower than running on the gpu) and not recommended.
 
 # Interacting with the Scene
 When running the renderer, you can move the camera around and take other actions through the keyboard.
@@ -182,15 +183,7 @@ surfaces:                            # list of objects in scene
 ```
 Render your scene with
 ```
-python demo.py scene_name.yaml
-```
-By default, the renderer will use your cpu. If you have a GPU with metal support, you can use it for faster rendering like so:
-```
-python demo.py scene_name.yaml --device metal
-```
-If you have an Nvidia GPU, you can use it for faster rendering like so:
-```
-python demo.py scene_name.yaml --device cuda
+python demo.py scene_name.yaml --device [metal|cuda]
 ```
 
 # Material Properties
@@ -221,7 +214,7 @@ The `color` property is a `list[float] [0, 1]` that determines the RGB values of
 
 To run the pictured scene:
 ```
-python demo.py color.yaml
+python demo.py color.yaml --device [metal|cuda]
 ```
 
 ## Luminance
@@ -233,7 +226,7 @@ The `luminance` property is a `float [0, inf]` that determines the amount of lig
 
 To run the pictured scene:
 ```
-python demo.py luminance.yaml
+python demo.py luminance.yaml --device [metal|cuda]
 ```
 
 ## Reflectivity
@@ -248,7 +241,7 @@ The `reflectivity` property is a `float [0, 1]` that determines how reflective a
 
 To run the pictured scene:
 ```
-python demo.py reflectivity.yaml
+python demo.py reflectivity.yaml --device [metal|cuda]
 ```
 
 ## Transparency
@@ -263,7 +256,7 @@ The `absorption` property is a `list[float] [0, 1]` that determines the amount o
 
 To run the pictured scene:
 ```
-python demo.py absorption.yaml
+python demo.py absorption.yaml --device [metal|cuda]
 ```
 
 ### Refractive Index
@@ -273,7 +266,7 @@ The `refractive_index` property is a `float (0, inf]` that determines the index 
 
 To run the pictured scene:
 ```
-python demo.py refractive_index.yaml
+python demo.py refractive_index.yaml --device [metal|cuda]
 ```
 
 ### Translucency
@@ -283,7 +276,7 @@ The `translucency` property is a `float [0, 1]` that determines how much the mat
 
 To run the pictured scene:
 ```
-python demo.py translucency.yaml
+python demo.py translucency.yaml --device [metal|cuda]
 ```
 
 ## Glossiness
@@ -297,7 +290,7 @@ The `gloss_refractive_index` property is a `float (0, inf]` that determines the 
 
 To run the pictured scene:
 ```
-python demo.py gloss_refractive_index.yaml
+python demo.py gloss_refractive_index.yaml --device [metal|cuda]
 ```
 
 ### Gloss translucency
@@ -307,7 +300,7 @@ The `gloss_translucency` property is a `float [0, 1]` that determines how much t
 
 To run the pictured scene:
 ```
-python demo.py gloss_translucency.yaml
+python demo.py gloss_translucency.yaml --device [metal|cuda]
 ```
 
 # TODO
