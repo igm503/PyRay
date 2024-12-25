@@ -55,7 +55,7 @@ class CPUTracer:
             iteration,
         )
         return img.astype(np.uint8)
-    
+
     def clear_cache(self):
         self.accumulation = None
 

@@ -1,6 +1,7 @@
 import time
 import math
 import argparse
+import warnings
 
 import cv2
 import numpy as np
@@ -14,10 +15,16 @@ parser.add_argument(
     "--device",
     type=str,
     default="cpu",
-    choices=["cpu", "metal", "cuda"],
+    choices=["metal", "cuda", "cpu"],
     help="Device to use for rendering",
+    required=True,
 )
 args = parser.parse_args()
+
+if args.device == "cpu":
+    warnings.warn(
+        "CPU rendering is extraordinarily slow and not recommended. Consider using Metal or CUDA."
+    )
 
 scene_path = f"scenes/{args.scene}" if args.scene else "scenes/default.yaml"
 
@@ -66,7 +73,7 @@ while True:
     cv2.imshow("image", img)
 
     key = cv2.waitKey(1) & 0xFF
-    
+
     if key != 0xFF:
         while cv2.waitKey(1) & 0xFF != 0xFF:
             pass

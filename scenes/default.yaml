@@ -3,7 +3,7 @@ view:
   dir: [0.0, -1.0, -0.0]
   fov: 70
   exposure: 2.0
-  num_samples: 1
+  num_samples: 5
   max_bounces: 200
   render_resolution: [1280, 720]
   display_resolution: [2560, 1440]
