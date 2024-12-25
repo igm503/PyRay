@@ -1,0 +1,149 @@
+view:
+  origin: [-11.0, -20.0, 16.0]
+  dir: [0.4, 0.9, -0.2]
+  fov: 70
+  exposure: 2.0
+  num_samples: 50
+  max_bounces: 200
+  render_resolution: [1280, 720]
+  display_resolution: [2560, 1440]
+
+
+save_render:
+  exposure: 2.0
+  num_samples: 10_000
+  max_bounces: 500
+  resolution: [3840, 2160]
+
+surfaces:
+  
+  # Ground
+  
+  - type: triangle
+    points:
+      - [-15000.0, -15000.0, 0]
+      - [15000, 15000.0, -0]
+      - [-15000.0, 15000, -0]
+    material:
+      color: [0.1, 0.3, 0.1]
+  - type: triangle
+    points:
+      - [-15000.0, -15000.0, 0]
+      - [15000, -15000.0, -0]
+      - [15000.0, 15000, -0]
+    material:
+      color: [0.1, 0.3, 0.1]
+
+  # sun
+  
+  - type: sphere
+    center: [0.0, -70_000.0, 100_000.0]
+    radius: 5000
+    material:
+      color: [1.0, 1.0, 0.7]
+      luminance: 1_000.0
+
+  - type: sphere
+    center: [-8, 16, 10]
+    radius: 8
+    material:
+      transparent: true
+      refractive_index: 1.2
+      translucency: 0.0
+
+  - type: sphere
+    center: [-8, 16, 13]
+    radius: 2.5
+    material:
+      transparent: true
+      refractive_index: 1.5
+      translucency: 0.0
+      absorption: [0.1, 0.1, 0.0]
+
+  - type: sphere
+    center: [-8, 16, 13]
+    radius: 1.0
+    material:
+      color: [0.7, 1.0, 0.7]
+      luminance: 10
+
+  - type: sphere
+    center: [-8, 16, 7]
+    radius: 2.5
+    material:
+      transparent: true
+      refractive_index: 1.5
+      translucency: 0.0
+      absorption: [0.0, 0.15, 0.0]
+
+  - type: sphere
+    center: [-8, 17, 6.5]
+    radius: 0.8
+    material:
+      transparent: true
+      refractive_index: 1.7
+      translucency: 0.0
+      absorption: [0.0, 0.0, 0.2]
+
+
+  - type: mesh
+    surfaces:
+      - type: quad
+        points:
+          - [2.0, 2.0, 2.0]
+          - [2.0, 18.0, 2.0]
+          - [18.0, 18.0, 2.0]
+          - [18.0, 2.0, 2.0]
+      - type: quad
+        points:
+          - [2.0, 2.0, 18.0]
+          - [2.0, 18.0, 18.0]
+          - [18.0, 18.0, 18.0]
+          - [18.0, 2.0, 18.0]
+      - type: quad
+        points:
+          - [2.0, 2.0, 2.0]
+          - [2.0, 2.0, 18.0]
+          - [2.0, 18.0, 18.0]
+          - [2.0, 18.0, 2.0]
+      - type: quad
+        points:
+          - [18.0, 2.0, 2.0]
+          - [18.0, 2.0, 18.0]
+          - [18.0, 18.0, 18.0]
+          - [18.0, 18.0, 2.0]
+      - type: quad
+        points:
+          - [2.0, 2.0, 2.0]
+          - [2.0, 2.0, 18.0]
+          - [18.0, 2.0, 18.0]
+          - [18.0, 2.0, 2.0]
+      - type: quad
+        points:
+          - [2.0, 18.0, 2.0]
+          - [2.0, 18.0, 18.0]
+          - [18.0, 18.0, 18.0]
+          - [18.0, 18.0, 2.0]
+    material:
+      color: [1.0, 1.0, 1.0]
+      transparent: true
+      refractive_index: 1.125
+      absorption: [0.2, 0.2, 0.05]
+      translucency: 0.0
+
+  - type: sphere
+    center: [10, 10, 10]
+    radius: 7
+    material:
+      transparent: true
+      refractive_index: 1.7
+      translucency: 0.0
+      absorption: [0.0, 0.2, 0.0]
+
+  - type: sphere
+    center: [10, 10, 10]
+    radius: 3
+    material:
+      color: [1.0, 0.7, 1.0]
+      luminance: 50.0
+
