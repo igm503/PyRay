@@ -1,14 +1,13 @@
-from typing import TYPE_CHECKING
 from pathlib import Path
+
 import numpy as np
 import pycuda.driver as cuda
 import pycuda.autoinit
 from pycuda.compiler import SourceModule
-from ..types import inputs_to_numpy
 
-if TYPE_CHECKING:
-    from view import View
-    from ..surfaces import Sphere, Triangle
+from ..types import inputs_to_numpy
+from ..view import View
+from ..surfaces import Sphere, Triangle
 
 
 class CudaTracer:
@@ -26,9 +25,9 @@ class CudaTracer:
 
     def render_iteration(
         self,
-        view: "View",
-        spheres: list["Sphere"],
-        triangles: list["Triangle"],
+        view: View,
+        spheres: list[Sphere],
+        triangles: list[Triangle],
         surrounding_spheres: list[int],
         num_rays: int,
         max_bounces: int,
