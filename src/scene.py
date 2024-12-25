@@ -31,7 +31,7 @@ class Scene:
     ):
         surrounding_media = self.get_surrounding_media(view, self.spheres)
         engine = self.engine(device)
-        img = engine.render(
+        img = engine.render_iteration(
             view,
             self.spheres,
             self.triangles,
@@ -41,6 +41,7 @@ class Scene:
             self.background_color,
             self.background_luminance,
             exposure,
+            False,
         )
         return cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
@@ -68,23 +69,20 @@ class Scene:
         rays_per_frame = 100
         num_iterations = num_rays // rays_per_frame
         save_interval = num_iterations // 10
-        for i, img in tqdm(
-            enumerate(
-                engine.cumulative_render(
-                    view,
-                    self.spheres,
-                    self.triangles,
-                    surrounding_media,
-                    rays_per_frame,
-                    max_bounces,
-                    self.background_color,
-                    self.background_luminance,
-                    exposure,
-                    num_iterations,
-                )
-            ),
-            total=num_iterations,
-        ):
+        for i in tqdm(range(num_iterations)):
+            img = engine.render_iteration(
+                view,
+                self.spheres,
+                self.triangles,
+                surrounding_media,
+                rays_per_frame,
+                max_bounces,
+                self.background_color,
+                self.background_luminance,
+                exposure,
+                True,
+                i,
+            )
             img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             cv2.imshow("image", img)
             cv2.waitKey(1)
@@ -93,6 +91,7 @@ class Scene:
         if save_dir is not None:
             cv2.imwrite(f"{save_dir}/output.png", img)
         print(f"Renders are saved to {save_dir}")
+        engine.clear_cache()
 
     def engine(self, device: str):
         if not hasattr(self, device):

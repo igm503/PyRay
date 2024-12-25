@@ -99,61 +99,6 @@ class CudaTracer:
         cuda.memcpy_dtoh(img, out_buffer)
         return img.reshape(view.height, view.width, 3).astype(np.uint8)
 
-    def render(
-        self,
-        view: "View",
-        spheres: list["Sphere"],
-        triangles: list["Triangle"],
-        surrounding_spheres: list[int],
-        num_rays: int,
-        max_bounces: int,
-        background_color: tuple[float, float, float],
-        background_luminance: float,
-        exposure: float,
-    ):
-        return self.render_iteration(
-            view,
-            spheres,
-            triangles,
-            surrounding_spheres,
-            num_rays,
-            max_bounces,
-            background_color,
-            background_luminance,
-            exposure,
-            False,
-        )
-
-    def cumulative_render(
-        self,
-        view: "View",
-        spheres: list["Sphere"],
-        triangles: list["Triangle"],
-        surrounding_spheres: list[int],
-        num_rays: int,
-        max_bounces: int,
-        background_color: tuple[float, float, float],
-        background_luminance: float,
-        exposure: float,
-        num_iterations: int,
-    ):
-        self.buffer_cache = {}
-        for iteration in range(num_iterations):
-            yield self.render_iteration(
-                view,
-                spheres,
-                triangles,
-                surrounding_spheres,
-                num_rays,
-                max_bounces,
-                background_color,
-                background_luminance,
-                exposure,
-                True,
-                iteration,
-            )
-        self.buffer_cache = {}
-
     def get_buffer(self, size, name, cache_data=None):
         if name in self.buffer_cache:
             if size in self.buffer_cache[name]:
@@ -184,3 +129,6 @@ class CudaTracer:
             )
             self.num_pixels = num_pixels
         return self.rand_states
+
+    def clear_cache(self):
+        self.buffer_cache = {}

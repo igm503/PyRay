@@ -3,7 +3,6 @@ from pathlib import Path
 import ctypes
 
 import Metal  # from pyobjc
-
 import metalcompute as mc
 import numpy as np
 
@@ -107,61 +106,6 @@ class MetalTracer:
         img = np.frombuffer(output_array, dtype=np.float32)
         return img.reshape(view.height, view.width, 3).astype(np.uint8)
 
-    def render(
-        self,
-        view: "View",
-        spheres: list["Sphere"],
-        triangles: list["Triangle"],
-        surrounding_spheres: list[int],
-        num_rays: int,
-        max_bounces: int,
-        background_color: tuple[float, float, float],
-        background_luminance: float,
-        exposure: float,
-    ):
-        return self.render_iteration(
-            view,
-            spheres,
-            triangles,
-            surrounding_spheres,
-            num_rays,
-            max_bounces,
-            background_color,
-            background_luminance,
-            exposure,
-            False,
-        )
-
-    def cumulative_render(
-        self,
-        view: "View",
-        spheres: list["Sphere"],
-        triangles: list["Triangle"],
-        surrounding_spheres: list[int],
-        num_rays: int,
-        max_bounces: int,
-        background_color: tuple[float, float, float],
-        background_luminance: float,
-        exposure: float,
-        num_iterations: int,
-    ):
-        self.buffer_cache = {}
-        for iteration in range(num_iterations):
-            yield self.render_iteration(
-                view,
-                spheres,
-                triangles,
-                surrounding_spheres,
-                num_rays,
-                max_bounces,
-                background_color,
-                background_luminance,
-                exposure,
-                True,
-                iteration,
-            )
-        self.buffer_cache = {}
-
     def get_buffer(self, size, name, shared=False, cache_data=None):
         if name in self.buffer_cache:
             if size in self.buffer_cache[name]:
@@ -202,3 +146,6 @@ class MetalTracer:
         command_buffer.commit()
         if wait:
             command_buffer.waitUntilCompleted()  # faster without wait, but screen tearing on movement
+
+    def clear_cache(self):
+        self.buffer_cache = {}
