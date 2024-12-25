@@ -162,5 +162,3 @@ cython_debug/
 #.idea/
 
 *.png
-# except for the following:
-!/assets/*.png

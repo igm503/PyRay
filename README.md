@@ -1,6 +1,6 @@
 # PyRay
 
-![Alt text](assets/example.png?raw=true "Title")
+![Alt text](assets/example.jpeg?raw=true "Title")
 
 A ray tracing engine for python.
 
@@ -193,6 +193,122 @@ If you have an Nvidia GPU, you can use it for faster rendering like so:
 python demo.py scene_name.yaml --device cuda
 ```
 
+# Material Properties
+
+Surfaces can have the following properties:
+
+```yaml
+  luminance: 0.0                 # how much light the object emits (default 0)
+  color: [0, 0.5, 0]             # RGB with range [0, 1]
+  reflectivity: 0.0              # float [0, 1] with 0 being diffuse and 1 mirror-like (default 0)
+  # TRANSPARENCY
+  transparent: false             # bool whether the object is transparent
+  refractive_index: 1.0          # index of refraction (default 1.0; only relevant for transparent objects)
+  translucency: 0.00             # 0.0 is clear; higher values (> 0.02) becoming very foggy (only relevant for transparent objects)
+  absorption: [0.0, 0.0, 0.0]    # exponential absorption rate of RBG light as it passes through material (only relevant for transparent objects)
+  # GLOSSINESS
+  glossy: false                   # bool whether the object is glossy (only relevant for non-transparent objects)
+  gloss_refractive_index: 1.0    # index of refraction (default 1.0; only relevant for glossy objects)
+  gloss_translucency: 0.00       # float [0, 1] controls gloss reflections, similar to reflectivity (only relevant for glossy objects)
+```
+
+## Color
+![Alt text](assets/color.jpeg?raw=true "color")
+
+The `color` property is a `list[float] [0, 1]` that determines the RGB values of the object.
+- `Color` affects diffuse and reflective interactions but does not affect light that is transmitted through objects or reflections due to gloss.
+- Strictly speaking, `color` values can take values outside of [0, 1] but values between 0 and 1 are easier to reason about.
+
+To run the pictured scene:
+```
+python demo.py color.yaml
+```
+
+## Luminance
+![Alt text](assets/luminance.jpeg?raw=true "luminance")
+
+The `luminance` property is a `float [0, inf]` that determines the amount of light emitted by the object. 
+- Surfaces with `luminance` greater than 0 will terminate ray bounces and give their color and intensity to the light ray.
+- Surfaces with `luminance` greater than 0 will not reflect any `gloss`, `reflectivity`, or `transparency` attributes.
+
+To run the pictured scene:
+```
+python demo.py luminance.yaml
+```
+
+## Reflectivity
+![Alt text](assets/reflectivity.jpeg?raw=true "reflectivity")
+
+The `reflectivity` property is a `float [0, 1]` that determines how reflective a surface is.
+
+- Surfaces with `reflectivity` equal to 0 will perfectly diffusely reflect incoming rays.
+- Surfaces with `reflectivity` equal to 1 will perfectly specularly reflect incoming rays.
+- Surfaces with `reflectivity` between 0 and 1 will mix diffuse and specular reflection.
+- Reflective surfaces give their color to the reflected ray.
+
+To run the pictured scene:
+```
+python demo.py reflectivity.yaml
+```
+
+## Transparency
+![Alt text](assets/nesting.jpeg?raw=true "transparent")
+
+Transparent surfaces allow light to pass through. `Transparency` is a `bool`, and transparent surfaces, provided they do not have a non-zero luminance value, ignore all other properties other than `absorption`, `refractive_index`, and `translucency`.
+
+### Absorption
+![Alt text](assets/absorption.jpeg?raw=true "absorption")
+
+The `absorption` property is a `list[float] [0, 1]` that determines the amount of light of each color (RGB) that is absorbed by the object. A value of 1 will cause all light to be absorbed over any distance; if the value is 0, none of that color will be absorbed over any distance.
+
+To run the pictured scene:
+```
+python demo.py absorption.yaml
+```
+
+### Refractive Index
+![Alt text](assets/refractive_index.jpeg?raw=true "refractive_index")
+
+The `refractive_index` property is a `float (0, inf]` that determines the index of refraction of the object. The index of refraction for empty space is set to 1.
+
+To run the pictured scene:
+```
+python demo.py refractive_index.yaml
+```
+
+### Translucency
+![Alt text](assets/translucency.jpeg?raw=true "translucency")
+
+The `translucency` property is a `float [0, 1]` that determines how much the material scatters light that passes through it. A value of 0 is completely clear, 1 is completely clouded, and frankly anything greater than 0.1 is rather clouded.
+
+To run the pictured scene:
+```
+python demo.py translucency.yaml
+```
+
+## GLOSSINESS
+
+Glossy surfaces have a chance of reflecting light in a way akin to a lacquer on a surface. `Glossiness` is a `bool`, and glossy surfaces give their color to the reflected ray if the ray passes through the gloss but reflect without giving color if the ray bounces off the glass. Glossy reflections are controlled by the `gloss_refractive_index` and `gloss_translucency` properties.
+
+### Gloss Refractive Index
+![Alt text](assets/gloss_refractive_index.jpeg?raw=true "gloss_refractive_index")
+
+The `gloss_refractive_index` property is a `float (0, inf]` that determines the index of refraction of the glossy surface. This determines the probability that light will pass through or reflect off the gloss.
+
+To run the pictured scene:
+```
+python demo.py gloss_refractive_index.yaml
+```
+
+### Gloss translucency
+![Alt text](assets/gloss_translucency.jpeg?raw=true "gloss_translucency")
+
+The `gloss_translucency` property is a `float [0, 1]` that determines how much the glossy surface scatters light that reflects off of it. This is the same as `translucency` but applied to glossy surfaces.
+
+To run the pictured scene:
+```
+python demo.py gloss_translucency.yaml
+```
 
 # TODO
 - Support for external mesh files
