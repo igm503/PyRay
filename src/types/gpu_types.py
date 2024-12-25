@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from view import View
+    from ..view import View
     from ..surfaces import Sphere, Triangle
 
 
@@ -45,8 +45,9 @@ class GPUTypes:
     triangle_dtype = np.dtype(
         [
             ("v0", np.float32, 3),
-            ("v1", np.float32, 3),
-            ("v2", np.float32, 3),
+            ("ab", np.float32, 3),
+            ("ac", np.float32, 3),
+            ("normal", np.float32, 3),
             ("material", material_dtype),
             ("mesh_id", np.int32),
         ]

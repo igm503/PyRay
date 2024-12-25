@@ -1,19 +1,12 @@
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
-
 import numpy as np
 
 from ..types import GPUTypes
 
 
-if TYPE_CHECKING:
-    from ..ray import Ray, Hit
-
-
 class Material:
     def __init__(
         self,
-        color: list = [1, 1, 1],
+        color: list[float] = [1.0, 1.0, 1.0],
         luminance: float = 0.0,
         reflectivity: float = 0.0,
         glossy: bool = False,
@@ -22,7 +15,7 @@ class Material:
         transparent: bool = False,
         refractive_index: float = 1.0,
         translucency: float = 0.0,
-        absorption: list = [0.01, 0.01, 0.01],
+        absorption: list[float] = [0.01, 0.01, 0.01],
     ):
         self.color = np.array(color)
         assert reflectivity >= 0 and reflectivity <= 1
@@ -60,9 +53,3 @@ class Material:
             ),
             dtype=GPUTypes.material_dtype,
         )
-
-
-class Surface(ABC):
-    @abstractmethod
-    def check_hit(self, ray: "Ray") -> "Hit | None":
-        pass

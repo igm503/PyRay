@@ -45,8 +45,9 @@ struct Sphere {
 
 struct Triangle {
   float3 v0;
-  float3 v1;
-  float3 v2;
+  float3 ab;
+  float3 ac;
+  float3 normal;
   Material material;
   int mesh_id;
 };
@@ -282,10 +283,8 @@ __device__ Hit sphere_hit(Ray ray, Sphere sphere) {
 }
 
 __device__ Hit triangle_hit(Ray ray, Triangle triangle) {
-  float3 ab = triangle.v1 - triangle.v0;
-  float3 ac = triangle.v2 - triangle.v0;
-  float3 pvec = cross(ray.dir, ac);
-  float det = dot(ab, pvec);
+  float3 pvec = cross(ray.dir, triangle.ac);
+  float det = dot(triangle.ab, pvec);
 
   if (abs(det) < EPS) {
     return NO_HIT;
@@ -298,18 +297,18 @@ __device__ Hit triangle_hit(Ray ray, Triangle triangle) {
     return NO_HIT;
   }
 
-  float3 qvec = cross(tvec, ab);
+  float3 qvec = cross(tvec, triangle.ab);
   float v = dot(ray.dir, qvec) * inv_det;
   if (v < 0.0f || u + v > 1.0f) {
     return NO_HIT;
   }
 
-  float t = dot(ac, qvec) * inv_det;
+  float t = dot(triangle.ac, qvec) * inv_det;
   if (t < 10.0f * EPS) {
     return NO_HIT;
   }
 
-  float3 normal = normalize(cross(ab, ac));
+  float3 normal = triangle.normal;
   if (det < 0.0f) {
     normal = -normal;
   }

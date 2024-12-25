@@ -24,13 +24,26 @@ class View:
         self.move_speed = 1
         self.cam_speed = 0.1
 
-    def to_numpy(self):
+        self.update_view()
+
+    def update_view(self):
         pixel_unit = (2.0 * math.tan(self.fov / 2.0)) / self.width
-        right_dir = -self.left_dir * pixel_unit
-        down_dir = -normalize(np.cross(self.dir, self.left_dir)) * pixel_unit
-        top_left_dir = self.dir - (self.width / 2) * right_dir - (self.height / 2) * down_dir
+        self.right_dir = -self.left_dir * pixel_unit
+        self.down_dir = -normalize(np.cross(self.dir, self.left_dir)) * pixel_unit
+        self.top_left_dir = (
+            self.dir - (self.width / 2) * self.right_dir - (self.height / 2) * self.down_dir
+        )
+
+    def to_numpy(self):
         return np.array(
-            (self.origin, top_left_dir, right_dir, down_dir, self.width, self.height),
+            (
+                self.origin,
+                self.top_left_dir,
+                self.right_dir,
+                self.down_dir,
+                self.width,
+                self.height,
+            ),
             dtype=GPUTypes.view_dtype,
         )
 
@@ -65,6 +78,7 @@ class View:
         new_x_y = normalize(new_x_y) * x_y_magnitude
         self.dir[0:2] = new_x_y[0:2]
         self.left_dir = normalize(np.cross(np.array([0, 0, 1]), self.dir))
+        self.update_view()
 
     def look_up(self):
         self.change_dir_vertical(self.cam_speed)
@@ -88,3 +102,4 @@ class View:
             ]
         )
         self.dir = normalize(new_dir)
+        self.update_view()

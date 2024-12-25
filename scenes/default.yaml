@@ -3,7 +3,7 @@ view:
   dir: [0.0, -1.0, -0.0]
   fov: 70
   exposure: 2.0
-  num_samples: 50
+  num_samples: 1
   max_bounces: 200
   render_resolution: [1280, 720]
   display_resolution: [2560, 1440]
@@ -16,6 +16,15 @@ save_render:
   resolution: [3840, 2160]
 
 surfaces:
+  
+  # sun
+  
+  - type: sphere
+    center: [-30000.0, 50000.0, 100000.0]
+    radius: 5000
+    material:
+      color: [1.0, 1.0, 0.7]
+      luminance: 1_000.0
   
   # Ground
   
@@ -166,169 +175,162 @@ surfaces:
   #     reflectivity: 0.7
 
 
-
-  - type: sphere
-    center: [-52.5, -8.2, 3]
-    radius: 1
-    material:
-      color: [1.0, 1.0, 1.0]
-      reflectivity: 0.9
-      transparent: True
-      refractive_index: 1.2
-      translucency: 0.00
-
-  - type: sphere
-    center: [-55.5, -8.2, 3]
-    radius: 1
-    material:
-      color: [1.0, 1.0, 1.0]
-      reflectivity: 0.9
-      transparent: True
-      refractive_index: 1.5
-      translucency: 0.00
-
-  - type: sphere
-    center: [-48.0, -6.0, 2]
-    radius: 1
-    material:
-      color: [1.0, 0.9, 0.9]
-      reflectivity: 1.0
-
-  - type: sphere
-    center: [-51.0, -6.0, 2]
-    radius: 1
-    material:
-      color: [1.0, 0.9, 0.9]
-      reflectivity: 0.9
-
-  - type: sphere
-    center: [-54.0, -6.0, 2]
-    radius: 1
-    material:
-      color: [1.0, 0.7, 0.8]
-      reflectivity: 0.0
-
-  - type: sphere
-    center: [-57.0, -6.0, 2]
-    radius: 1
-    material:
-      color: [1.0, 1.0, 1.0]
-      transparent: True
-      translucency: 0.05
-      refractive_index: 2.0
-      absorption: [0.20, 0.3, 0.0]
-
-  - type: sphere
-    center: [-57.0, -6.0, 2]
-    radius: .2
-    material:
-      color: [1.0, 0.6, 0.3]
-      luminance: 5.0
-
-  - type: sphere
-    center: [-57.0, -6.0, 5]
-    radius: 1
-    material:
-      color: [1.0, 1.0, 1.0]
-      transparent: True
-      translucency: 0.05
-      refractive_index: 2.0
-      absorption: [0.20, 0.3, 0.0]
-
-  - type: sphere
-    center: [-57.0, -6.0, 7]
-    radius: .2
-    material:
-      color: [1.0, 0.6, 0.3]
-      luminance: 5.0
-
-  - type: sphere
-    center: [-46.5, -3.8, 1.2]
-    radius: 1
-    material:
-      color: [1.0, 1.0, 1.0]
-      reflectivity: 0.9
-      transparent: True
-      refractive_index: 1.5
-      translucency: 0.00
-
-  - type: sphere
-    center: [-49.5, -3.8, 1.5]
-    radius: 1
-    material:
-      color: [1.0, 1.0, 1.0]
-      reflectivity: 0.9
-      transparent: True
-      refractive_index: 1.5
-      translucency: 0.00
-
-  - type: sphere
-    center: [-52.5, -3.8, 1.75]
-    radius: 1
-    material:
-      color: [1.0, 1.0, 1.0]
-      reflectivity: 0.9
-      transparent: True
-      refractive_index: 1.5
-      translucency: 0.00
-
-  - type: sphere
-    center: [-55.5, -3.8, 1.9]
-    radius: 1
-    material:
-      color: [1.0, 1.0, 1.0]
-      reflectivity: 0.9
-      transparent: True
-      refractive_index: 1.5
-      translucency: 0.00
-
-
-  - type: sphere
-    center: [-58.5, -3.8, 2.2]
-    radius: 1
-    material:
-      color: [1.0, 0.0, 0.0]
-      reflectivity: 0.0
-      glossy: True
-      gloss_refractive_index: 1.5
-      gloss_translucency: 0.09
-
-  - type: sphere
-    center: [-58.5, -30.8, 12.2]
-    radius: 10
-    material:
-      color: [1.0, 1.0, 1.0]
-      reflectivity: 0.9
-      transparent: True
-      refractive_index: 1.20
-      translucency: 0.00
-
-  - type: sphere
-    center: [-58.5, -30.8, 12.2]
-    radius: 7
-    material:
-      color: [1.0, 1.0, 1.0]
-      reflectivity: 0.9
-      transparent: True
-      refractive_index: 1.20
-      translucency: 0.00
-      absorption: [0.1, 0.1, 0.01]
-  - type: sphere
-    center: [-58.5, -30.8, 12.2]
-    radius: 4
-    material:
-      color: [1.0, 1.0, 1.0]
-      reflectivity: 0.9
-      transparent: True
-      refractive_index: 1.50
-      translucency: 0.00
-      absorption: [0.01, 0.1, 0.1]
-
-
-  # # sun
-  - type: sphere
-    center: [-30000.0, 50000.0, 100000.0]
-    radius: 5000
-    material:
-      color: [1.0, 1.0, 0.7]
-      luminance: 1_000.0
+  #
+  # - type: sphere
+  #   center: [-52.5, -8.2, 3]
+  #   radius: 1
+  #   material:
+  #     color: [1.0, 1.0, 1.0]
+  #     reflectivity: 0.9
+  #     transparent: True
+  #     refractive_index: 1.2
+  #     translucency: 0.00
+  #
+  # - type: sphere
+  #   center: [-55.5, -8.2, 3]
+  #   radius: 1
+  #   material:
+  #     color: [1.0, 1.0, 1.0]
+  #     reflectivity: 0.9
+  #     transparent: True
+  #     refractive_index: 1.5
+  #     translucency: 0.00
+  #
+  # - type: sphere
+  #   center: [-48.0, -6.0, 2]
+  #   radius: 1
+  #   material:
+  #     color: [1.0, 0.9, 0.9]
+  #     reflectivity: 1.0
+  #
+  # - type: sphere
+  #   center: [-51.0, -6.0, 2]
+  #   radius: 1
+  #   material:
+  #     color: [1.0, 0.9, 0.9]
+  #     reflectivity: 0.9
+  #
+  # - type: sphere
+  #   center: [-54.0, -6.0, 2]
+  #   radius: 1
+  #   material:
+  #     color: [1.0, 0.7, 0.8]
+  #     reflectivity: 0.0
+  #
+  # - type: sphere
+  #   center: [-57.0, -6.0, 2]
+  #   radius: 1
+  #   material:
+  #     color: [1.0, 1.0, 1.0]
+  #     transparent: True
+  #     translucency: 0.05
+  #     refractive_index: 2.0
+  #     absorption: [0.20, 0.3, 0.0]
+  #
+  # - type: sphere
+  #   center: [-57.0, -6.0, 2]
+  #   radius: .2
+  #   material:
+  #     color: [1.0, 0.6, 0.3]
+  #     luminance: 5.0
+  #
+  # - type: sphere
+  #   center: [-57.0, -6.0, 5]
+  #   radius: 1
+  #   material:
+  #     color: [1.0, 1.0, 1.0]
+  #     transparent: True
+  #     translucency: 0.05
+  #     refractive_index: 2.0
+  #     absorption: [0.20, 0.3, 0.0]
+  #
+  # - type: sphere
+  #   center: [-57.0, -6.0, 7]
+  #   radius: .2
+  #   material:
+  #     color: [1.0, 0.6, 0.3]
+  #     luminance: 5.0
+  #
+  # - type: sphere
+  #   center: [-46.5, -3.8, 1.2]
+  #   radius: 1
+  #   material:
+  #     color: [1.0, 1.0, 1.0]
+  #     reflectivity: 0.9
+  #     transparent: True
+  #     refractive_index: 1.5
+  #     translucency: 0.00
+  #
+  # - type: sphere
+  #   center: [-49.5, -3.8, 1.5]
+  #   radius: 1
+  #   material:
+  #     color: [1.0, 1.0, 1.0]
+  #     reflectivity: 0.9
+  #     transparent: True
+  #     refractive_index: 1.5
+  #     translucency: 0.00
+  #
+  # - type: sphere
+  #   center: [-52.5, -3.8, 1.75]
+  #   radius: 1
+  #   material:
+  #     color: [1.0, 1.0, 1.0]
+  #     reflectivity: 0.9
+  #     transparent: True
+  #     refractive_index: 1.5
+  #     translucency: 0.00
+  #
+  # - type: sphere
+  #   center: [-55.5, -3.8, 1.9]
+  #   radius: 1
+  #   material:
+  #     color: [1.0, 1.0, 1.0]
+  #     reflectivity: 0.9
+  #     transparent: True
+  #     refractive_index: 1.5
+  #     translucency: 0.00
+  #
+  #
+  # - type: sphere
+  #   center: [-58.5, -3.8, 2.2]
+  #   radius: 1
+  #   material:
+  #     color: [1.0, 0.0, 0.0]
+  #     reflectivity: 0.0
+  #     glossy: True
+  #     gloss_refractive_index: 1.5
+  #     gloss_translucency: 0.09
+  #
+  # - type: sphere
+  #   center: [-58.5, -30.8, 12.2]
+  #   radius: 10
+  #   material:
+  #     color: [1.0, 1.0, 1.0]
+  #     reflectivity: 0.9
+  #     transparent: True
+  #     refractive_index: 1.20
+  #     translucency: 0.00
+  #
+  # - type: sphere
+  #   center: [-58.5, -30.8, 12.2]
+  #   radius: 7
+  #   material:
+  #     color: [1.0, 1.0, 1.0]
+  #     reflectivity: 0.9
+  #     transparent: True
+  #     refractive_index: 1.20
+  #     translucency: 0.00
+  #     absorption: [0.1, 0.1, 0.01]
+  # - type: sphere
+  #   center: [-58.5, -30.8, 12.2]
+  #   radius: 4
+  #   material:
+  #     color: [1.0, 1.0, 1.0]
+  #     reflectivity: 0.9
+  #     transparent: True
+  #     refractive_index: 1.50
+  #     translucency: 0.00
+  #     absorption: [0.01, 0.1, 0.1]
+  #
+  #
