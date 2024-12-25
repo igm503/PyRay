@@ -10,7 +10,6 @@ from ..surfaces import Material, Triangle, Sphere
 EPS = 1e-6
 BIG_EPS = 1e-3
 AIR_REF_INDEX = 1.0
-MAX_STACK_SIZE = 8
 
 rng = np.random.default_rng(0)
 
@@ -96,7 +95,6 @@ def refract_dir(
 
     diffuse_dir = reflect_diffuse(normal)
 
-    # Linear interpolation between refracted and diffuse direction
     final_dir = (1 - translucency) * refracted_dir + translucency * diffuse_dir
     return final_dir / np.linalg.norm(final_dir)
 

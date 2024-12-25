@@ -29,7 +29,7 @@ class Material:
         assert refractive_index >= 0
         self.refractive_index = refractive_index
         assert all([i >= 0 for i in absorption])
-        self.absorption = absorption
+        self.absorption = np.array(absorption, dtype=np.float32)
         assert glossy is True or glossy is False
         self.glossy = glossy
         assert gloss_refractive_index >= 0
