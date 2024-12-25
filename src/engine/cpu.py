@@ -21,6 +21,9 @@ class Mesh:
 
 
 class CPUTracer:
+    def __init__(self):
+        self.accumulation = None
+
     def render_iteration(
         self,
         view: View,
@@ -35,6 +38,9 @@ class CPUTracer:
         accumulate: bool,
         iteration: int = 0,
     ):
+        if accumulate and iteration == 0:
+            self.accumulation = np.zeros((view.height, view.width, 3), dtype=np.float32)
+
         img = trace_rays(
             view,
             spheres,
@@ -45,10 +51,13 @@ class CPUTracer:
             np.array(background_color, dtype=np.float32),
             background_luminance,
             exposure,
-            accumulate,
+            self.accumulation if accumulate else None,
             iteration,
         )
         return img.astype(np.uint8)
+    
+    def clear_cache(self):
+        self.accumulation = None
 
 
 def schlick_fresnel(cosine: float, eta1: float, eta2: float) -> float:
@@ -215,14 +224,11 @@ def trace_rays(
     background_color: np.ndarray,
     background_luminance: float,
     exposure: float,
-    accumulate: bool,
+    accumulation: np.ndarray | None,
     iteration: int,
 ) -> np.ndarray:
     width, height = view.width, view.height
     output = np.zeros((height, width, 3), dtype=np.float32)
-
-    if accumulate:
-        accumulation = np.zeros((height, width, 3), dtype=np.float32)
 
     _inside_stack = get_surrounding_media(spheres, surrounding_sphere_indices)
 
@@ -353,7 +359,7 @@ def trace_rays(
 
             pixel_color = pixel_color / num_rays
 
-            if accumulate:
+            if accumulation is not None:
                 if iteration == 0:
                     accumulation[y, x] = pixel_color
                 else:
