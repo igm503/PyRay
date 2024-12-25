@@ -267,7 +267,7 @@ python demo.py absorption.yaml
 ```
 
 ### Refractive Index
-![Alt text](assets/refractive_index.jpeg?raw=true "refractive_index")
+![Alt text](assets/refractive-index.jpeg?raw=true "refractive_index")
 
 The `refractive_index` property is a `float (0, inf]` that determines the index of refraction of the object. The index of refraction for empty space is set to 1.
 
@@ -286,12 +286,12 @@ To run the pictured scene:
 python demo.py translucency.yaml
 ```
 
-## GLOSSINESS
+## Glossiness
 
 Glossy surfaces have a chance of reflecting light in a way akin to a lacquer on a surface. `Glossiness` is a `bool`, and glossy surfaces give their color to the reflected ray if the ray passes through the gloss but reflect without giving color if the ray bounces off the glass. Glossy reflections are controlled by the `gloss_refractive_index` and `gloss_translucency` properties.
 
 ### Gloss Refractive Index
-![Alt text](assets/gloss_refractive_index.jpeg?raw=true "gloss_refractive_index")
+![Alt text](assets/gloss-refractive-index.jpeg?raw=true "gloss_refractive_index")
 
 The `gloss_refractive_index` property is a `float (0, inf]` that determines the index of refraction of the glossy surface. This determines the probability that light will pass through or reflect off the gloss.
 
@@ -301,7 +301,7 @@ python demo.py gloss_refractive_index.yaml
 ```
 
 ### Gloss translucency
-![Alt text](assets/gloss_translucency.jpeg?raw=true "gloss_translucency")
+![Alt text](assets/gloss-translucency.jpeg?raw=true "gloss_translucency")
 
 The `gloss_translucency` property is a `float [0, 1]` that determines how much the glossy surface scatters light that reflects off of it. This is the same as `translucency` but applied to glossy surfaces.
 
