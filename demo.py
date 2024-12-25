@@ -104,6 +104,7 @@ while True:
             prev_width = view.width
             view.width = save_config["resolution"][0]
             view.height = save_config["resolution"][1]
+            view.update_view()
             scene.cumulative_render(
                 view,
                 num_rays=save_config["num_samples"],

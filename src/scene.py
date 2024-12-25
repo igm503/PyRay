@@ -69,6 +69,7 @@ class Scene:
         rays_per_frame = 100
         num_iterations = num_rays // rays_per_frame
         save_interval = num_iterations // 10
+        engine.clear_cache()
         for i in tqdm(range(num_iterations)):
             img = engine.render_iteration(
                 view,
