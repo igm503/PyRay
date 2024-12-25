@@ -1,6 +1,6 @@
 # PyRay
 
-![Alt text](assets/example.jpeg?raw=true "Title")
+![Alt text](assets/nesting.jpeg?raw=true "Title")
 
 A ray tracing engine for python.
 
