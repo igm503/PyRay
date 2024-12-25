@@ -9,10 +9,9 @@ A ray tracing engine for python.
 - Spheres, Triangles, and Quads
 - Meshes from Triangles and Quads
 - Diffuse and Specular Reflections
-- Transparent Surfaces with Refraction
-- Basic HDR Tone Mapping
-- Realtime Mode
-- Save Higher Quality Renders
+- Transparency and Refraction
+- Simple HDR Tone Mapping
+- Realtime and Cumulative Render Modes
 
 # Getting Started
 You must have Python installed (tested with Python 3.10).
